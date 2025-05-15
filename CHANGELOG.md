@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.0.2
+
+### Patch Changes
+
+- 8f2303f: updated Readme.md
+
 ## 1.0.1
 
 ### Patch Changes
