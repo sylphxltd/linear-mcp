@@ -1,0 +1,10 @@
+commit-msg:
+  commands:
+    commitlint:
+      run: pnpm exec commitlint --edit {1}
+# pre-commit: # Can be added later
+#   parallel: true
+#   commands:
+#     biome-check:
+#       glob: '{apps,packages}/**/*.{ts,tsx,js,jsx,mjs,cjs,json,md,css,graphql}'
+#       run: pnpm exec biome check --write --unsafe --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
