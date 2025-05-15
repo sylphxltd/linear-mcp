@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A Model Context Protocol (MCP) server for interacting with Linear issues, projects, teams, and more",
   "license": "ISC",
-  "author": "",
+  "author": "@sylphx",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
