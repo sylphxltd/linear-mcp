@@ -1,0 +1,54 @@
+name: Release
+
+on:
+  push:
+    branches: [ main ] # Or your default branch
+  pull_request:
+    branches: [ main ] # Or your default branch
+
+jobs:
+  release:
+    # This job runs only on pushes to the main branch
+    name: Release Packages
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history for changeset versioning
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22 # Use Node.js 22 LTS
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build packages
+        run: pnpm run build # Build necessary for publish
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # Publish packages to NPM publicly
+          publish: pnpm publish -r --access public --no-git-checks
+          commit: "chore: version packages"
+          
+          # Commit and Title are not needed when publishing directly
+          # version: pnpm changeset version # Handled by publish command implicitly
+          # commit: "chore: version packages for release"
+          # title: "chore: version packages for release"
+          # Optional: If using a custom bot user for commits
+          # user.name: "github-actions[bot]"
+          # user.email: "github-actions[bot]@users.noreply.github.com"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # NPM_TOKEN required only if 'publish' command is used above
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
