@@ -43,40 +43,6 @@ Configure your MCP host (e.g., `mcp_settings.json`) to use npx:
   }
 }
 ```
-## Usage
-
-### Environment Setup
-
-Set your Linear API key as an environment variable:
-
-```bash
-export LINEAR_API_KEY=your_linear_api_key
-```
-
-You can get your Linear API key from the [Linear Developer Settings](https://linear.app/settings/api).
-
-### Starting the Server
-
-```javascript
-import { startServer } from 'linear-mcp';
-
-startServer();
-```
-
-Or use the CLI:
-
-```bash
-npx linear-mcp
-```
-
-### Connecting to the Server
-
-The server can be connected to using any MCP client. For example, using the MCP CLI:
-
-```bash
-npx mcp-cli connect linear
-```
-
 ## Available Tools
 
 ### Issues
@@ -114,10 +80,6 @@ npx mcp-cli connect linear
 ### Labels
 
 - `list_issue_labels`: List available issue labels in a Linear team
-
-### Documentation
-
-- `search_documentation`: Search Linear's documentation to learn about features and usage
 
 ### My Issues
 
