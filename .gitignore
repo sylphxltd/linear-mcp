@@ -10,8 +10,7 @@ apps/*/src/.vitepress/cache
 apps/*/src/.vitepress/dist
 
 # Build outputs (general) - adjust if too broad
-# dist
-# **/dist
+dist
 # Package Build Outputs
 packages/*/dist
 
