@@ -8,9 +8,6 @@ importers:
 
   .:
     dependencies:
-      '@changesets/cli':
-        specifier: ^2.29.4
-        version: 2.29.4
       '@linear/sdk':
         specifier: ^40.0.0
         version: 40.0.0
@@ -24,6 +21,9 @@ importers:
         specifier: ^3.24.4
         version: 3.24.4
     devDependencies:
+      '@changesets/cli':
+        specifier: ^2.29.4
+        version: 2.29.4
       '@commitlint/cli':
         specifier: ^19.8.1
         version: 19.8.1(@types/node@22.15.18)(typescript@5.8.3)
