@@ -23,6 +23,26 @@ yarn add linear-mcp
 pnpm add linear-mcp
 ```
 
+## MCP Host Configuration
+
+Configure your MCP host (e.g., `mcp_settings.json`) to use npx:
+
+```json
+{
+  "mcpServers": {
+     "linear": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@sylphx/linear-mcp"
+      ],
+      "env": {
+        "LINEAR_API_KEY": ""
+      }
+    }
+  }
+}
+```
 ## Usage
 
 ### Environment Setup
