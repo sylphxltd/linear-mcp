@@ -56,5 +56,13 @@
     "ai",
     "issue-tracking",
     "project-management"
-  ]
+  ],
+  "pre-commit": {
+    "hooks": {
+      "pre-commit": [
+        "lint-staged"
+      ]
+    }
+  },
+  "packageManager": "pnpm@10.8.0"
 }
