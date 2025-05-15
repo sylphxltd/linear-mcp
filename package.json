@@ -1,6 +1,6 @@
 {
   "name": "@sylphx/linear-mcp",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A Model Context Protocol (MCP) server for interacting with Linear issues, projects, teams, and more",
   "license": "ISC",
   "author": "@sylphx",
