@@ -58,5 +58,5 @@
 		"issue-tracking",
 		"project-management"
 	],
-	"packageManager": "pnpm@10.8.0"
+	"packageManager": "pnpm@10.10.0"
 }
