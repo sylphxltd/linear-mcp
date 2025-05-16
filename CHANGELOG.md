@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.3.4
+
+### Patch Changes
+
+- 843c91b: fix: add shebang for executable script support
+
 ## 1.3.3
 
 ### Patch Changes
