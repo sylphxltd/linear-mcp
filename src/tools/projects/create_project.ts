@@ -1,7 +1,7 @@
 import { ProjectCreateSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
-import { ProjectInput } from './shared.js';
+import type { ProjectInput } from './shared.js';
 
 export const createProjectTool = defineTool({
   name: 'create_project',

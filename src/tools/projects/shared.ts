@@ -95,14 +95,10 @@ export async function validateTeamIdOrThrow(linearClient: LinearClient, teamId: 
     );
   }
 }
-
-// Validate project update args
-export async function validateProjectUpdateArgsOrThrow(
+async function assertValidProjectId(
   linearClient: LinearClient,
   projectId: string,
-  teamIds?: string[],
 ): Promise<void> {
-  // Validate project id
   try {
     const projectToUpdate = await linearClient.project(projectId);
     if (!projectToUpdate) {
@@ -140,13 +136,16 @@ export async function validateProjectUpdateArgsOrThrow(
       `${specificMessage} Valid projects are: ${availableProjectsJsonString}`,
     );
   }
+}
 
-  // Validate teamIds if provided
+async function assertValidTeamIds(
+  linearClient: LinearClient,
+  teamIds?: string[],
+): Promise<void> {
   if (teamIds && teamIds.length > 0) {
     const availableTeams = await linearClient.teams();
     const validTeamIds = availableTeams.nodes.map((team) => team.id);
     const invalidTeamIds = teamIds.filter((teamId) => !validTeamIds.includes(teamId));
-
     if (invalidTeamIds.length > 0) {
       const availableTeamsJsonString = await getAvailableTeamsJson(linearClient);
       throw new McpError(
@@ -155,4 +154,14 @@ export async function validateProjectUpdateArgsOrThrow(
       );
     }
   }
+}
+
+// Validate project update args
+export async function validateProjectUpdateArgsOrThrow(
+  linearClient: LinearClient,
+  projectId: string,
+  teamIds?: string[],
+): Promise<void> {
+  await assertValidProjectId(linearClient, projectId);
+  await assertValidTeamIds(linearClient, teamIds);
 }

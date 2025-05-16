@@ -23,13 +23,25 @@ export async function getAvailableTeamsMessage(linearClient: LinearClient): Prom
 /**
  * Formats an array of label nodes for output.
  */
-export function formatLabelNodes(labels: any[]): object[] {
+export function formatLabelNodes(
+  labels: { [key: string]: any }[],
+): object[] {
   return labels.map((label) => ({
     id: label.id,
     name: label.name,
     color: label.color,
     description: label.description,
-    createdAt: label.createdAt,
-    updatedAt: label.updatedAt,
+    createdAt:
+      label.createdAt instanceof Date
+        ? label.createdAt.toISOString()
+        : typeof label.createdAt === 'string'
+        ? label.createdAt
+        : undefined,
+    updatedAt:
+      label.updatedAt instanceof Date
+        ? label.updatedAt.toISOString()
+        : typeof label.updatedAt === 'string'
+        ? label.updatedAt
+        : undefined,
   }));
 }
