@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.1.2
+
+### Patch Changes
+
+- f8289d3: return cycle information on other nodes.
+
 ## 1.1.1
 
 ### Patch Changes
