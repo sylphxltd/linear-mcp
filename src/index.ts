@@ -16,13 +16,13 @@ export { McpError, ErrorCode } from "@modelcontextprotocol/sdk/types.js";
 // Import Linear client
 import { LinearClientManager } from "./utils/linear-client.js";
 
-import { cycleTools } from "./tools/cycles.js";
 import { issueStatusTools } from "./tools/issue-statuses.js";
 // Import tools
 import { issueTools } from "./tools/issues.js";
 import { labelTools } from "./tools/labels.js";
 import { myIssuesTools } from "./tools/my-issues.js";
 import { projectTools } from "./tools/projects.js";
+import { projectMilestoneTools } from "./tools/project-milestones.js"; // Added
 import { teamTools } from "./tools/teams.js";
 import { userTools } from "./tools/users.js";
 
@@ -61,7 +61,7 @@ const allTools = {
 	...issueStatusTools,
 	...labelTools,
 	...myIssuesTools,
-	...cycleTools,
+	...projectMilestoneTools, // Added
 };
 
 for (const tool of Object.values(allTools)) {

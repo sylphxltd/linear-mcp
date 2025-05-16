@@ -37,7 +37,7 @@ export const IssueFilterSchema = {
 	teamId: z.string().optional().describe("The team UUID"),
 	stateId: z.string().optional().describe("The state UUID"),
 	assigneeId: z.string().optional().describe("The assignee UUID"),
-	cycleId: z.string().optional().describe("The cycle UUID to filter by"),
+	projectMilestoneId: z.string().uuid('Invalid project milestone ID').optional().describe("The project milestone ID to filter by"), // Added
 	includeArchived: z
 		.boolean()
 		.default(true)
@@ -72,7 +72,7 @@ export const IssueCreateSchema = {
 		.string()
 		.optional()
 		.describe("The due date for the issue in ISO format"),
-	cycleId: z.string().optional().describe("The cycle ID to assign the issue to"),
+	projectMilestoneId: z.string().uuid('Invalid project milestone ID').optional().describe("The project milestone ID to associate the issue with"), // Added
 };
 
 export const IssueUpdateSchema = {
@@ -102,13 +102,7 @@ export const IssueUpdateSchema = {
 		.string()
 		.optional()
 		.describe("The due date for the issue in ISO format"),
-	cycleId: z
-		.string()
-		.optional()
-		.nullable()
-		.describe(
-			"The cycle ID to assign the issue to. Pass null to remove from cycle.",
-		),
+	projectMilestoneId: z.string().uuid('Invalid project milestone ID').nullable().optional().describe("The project milestone ID to associate the issue with (null to remove)"), // Added
 };
 
 export const CommentCreateSchema = {
@@ -176,6 +170,29 @@ export const ProjectUpdateSchema = {
 		.optional()
 		.describe("The target date of the project in ISO format"),
 };
+
+// Project Milestone schemas
+export const ListProjectMilestonesInputSchema = z.object({
+  projectId: z.string().uuid('Invalid project ID'),
+});
+
+export const CreateProjectMilestoneInputSchema = z.object({
+  projectId: z.string().uuid('Invalid project ID'),
+  name: z.string().min(1, 'Milestone name cannot be empty'),
+  description: z.string().optional(),
+  targetDate: z.string().datetime({ message: 'Invalid ISO date string for targetDate' }).optional(),
+});
+
+export const UpdateProjectMilestoneInputSchema = z.object({
+  milestoneId: z.string().uuid('Invalid milestone ID'),
+  name: z.string().min(1, 'Milestone name cannot be empty').optional(),
+  description: z.string().optional(),
+  targetDate: z.string().datetime({ message: 'Invalid ISO date string for targetDate' }).optional(),
+});
+
+export const DeleteProjectMilestoneInputSchema = z.object({
+  milestoneId: z.string().uuid('Invalid milestone ID'),
+});
 
 // Team schemas
 export const TeamQuerySchema = {
