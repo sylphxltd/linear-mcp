@@ -34,7 +34,7 @@ importers:
         specifier: 0.2.0
         version: 0.2.0(@biomejs/biome@1.9.4)
       '@types/node':
-        specifier: ^22.15.18
+        specifier: 22.15.18
         version: 22.15.18
       lefthook:
         specifier: 1.11.12
