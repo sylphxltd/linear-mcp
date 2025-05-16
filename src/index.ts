@@ -59,13 +59,23 @@ const allTools = {
 };
 
 for (const tool of Object.values(allTools)) {
-  // Register each tool with the server
-  server.tool(
-    tool.name,
-    tool.description,
-    tool.inputSchema,
-    tool.handler as unknown as ToolCallback<typeof tool.inputSchema>,
-  );
+  // Type guard to ensure tool is a ToolDefinition
+  if (
+    tool &&
+    typeof tool === 'object' &&
+    'name' in tool &&
+    'description' in tool &&
+    'inputSchema' in tool &&
+    'handler' in tool
+  ) {
+    // Register each tool with the server
+    server.tool(
+      tool.name,
+      tool.description,
+      tool.inputSchema,
+      tool.handler as unknown as ToolCallback<typeof tool.inputSchema>,
+    );
+  }
 }
 
 // Main function to start the server
