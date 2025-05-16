@@ -19,6 +19,7 @@ export const listIssuesTool = defineTool({
     stateId,
     assigneeId,
     projectMilestoneId,
+    projectId,
     includeArchived = true,
     limit = 50,
   }) => {
@@ -61,6 +62,13 @@ export const listIssuesTool = defineTool({
         ...(filters.filter || {}),
         projectMilestone: { id: { eq: projectMilestoneId } },
       };
+    if (projectId) {
+      filters.projectId = projectId;
+      filters.filter = {
+        ...(filters.filter || {}),
+        project: { id: { eq: projectId } },
+      };
+    }
 
     // Query and map
     const issuesConnection = await linearClient.issues(

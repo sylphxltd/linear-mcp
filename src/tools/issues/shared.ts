@@ -148,6 +148,7 @@ export type IssueFilters = {
   teamId?: string;
   stateId?: string;
   assigneeId?: string;
+  projectId?: string;
   includeArchived?: boolean;
   first?: number;
 };

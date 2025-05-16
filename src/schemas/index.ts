@@ -42,6 +42,7 @@ export const IssueFilterSchema = {
     .describe('The project milestone ID to filter by'), // Added
   includeArchived: z.boolean().default(true).describe('Whether to include archived issues'),
   limit: z.number().default(50).describe('The number of issues to return'),
+  projectId: z.string().optional().describe('The project ID to filter by'),
 };
 
 export const IssueCreateSchema = {
