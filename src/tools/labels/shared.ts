@@ -1,5 +1,25 @@
+import { z } from 'zod';
 import type { Team } from '@linear/sdk';
 import type { LinearClient } from '@linear/sdk';
+
+// --- Tool definition utility (local copy) ---
+export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
+  name: string;
+  description: string;
+  inputSchema: T;
+  handler: import('@modelcontextprotocol/sdk/server/mcp.js').ToolCallback<T>;
+}
+export const defineTool = <T extends z.ZodRawShape>(tool: ToolDefinition<T>): ToolDefinition<T> => ({
+  name: tool.name,
+  description: tool.description,
+  inputSchema: tool.inputSchema,
+  handler: tool.handler,
+});
+
+// --- Label schemas (local copy) ---
+export const LabelListSchema = {
+  teamId: z.string().describe('The team UUID'),
+};
 
 /**
  * Fetches a message listing all available teams, or a fallback message if none found.
