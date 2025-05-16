@@ -1,1 +1,0 @@
----\n@sylphx/linear-mcp: patch\n---\n\nfeat: Remove Cycles, add Project Milestones, update README\n
