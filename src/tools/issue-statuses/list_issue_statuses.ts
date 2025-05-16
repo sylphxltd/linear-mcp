@@ -1,4 +1,5 @@
-import { IssueStatusListSchema, defineTool } from '../../schemas/index.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { IssueStatusListSchema } from './shared.js';
 import { throwInternalError, validateTeamOrThrow } from './shared.js';
 
 export const listIssueStatusesTool = defineTool({

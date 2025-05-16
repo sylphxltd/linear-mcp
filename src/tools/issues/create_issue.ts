@@ -1,5 +1,6 @@
 import { getLinearClient } from '../../utils/linear-client.js';
-import { IssueCreateSchema, defineTool } from './shared.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { IssueCreateSchema } from './shared.js';
 import {
   mapIssueToDetails,
   validateAssignee,

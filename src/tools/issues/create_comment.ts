@@ -1,5 +1,6 @@
-import { CommentCreateSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { CommentCreateSchema } from './shared.js';
 import { validateIssueExists } from './shared.js';
 
 export const createCommentTool = defineTool({

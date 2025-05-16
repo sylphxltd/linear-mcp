@@ -1,5 +1,6 @@
-import { IssueUpdateSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { IssueUpdateSchema } from './shared.js';
 import {
   mapIssueToDetails,
   validateAssignee,

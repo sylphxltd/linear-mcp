@@ -1,7 +1,8 @@
 import type { ProjectMilestone } from '@linear/sdk';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { ListProjectMilestonesInputSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { ListProjectMilestonesInputSchema } from './shared.js';
 import { getAvailableProjectsJsonForError } from './shared.js';
 
 export const listProjectMilestonesTool = defineTool({

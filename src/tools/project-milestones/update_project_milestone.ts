@@ -1,7 +1,8 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
-import { UpdateProjectMilestoneInputSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { UpdateProjectMilestoneInputSchema } from './shared.js';
 
 export const updateProjectMilestoneTool = defineTool({
   name: 'update_project_milestone',

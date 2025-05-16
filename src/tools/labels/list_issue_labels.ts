@@ -1,6 +1,7 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { LabelListSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { LabelListSchema } from './shared.js';
 import { formatLabelNodes, getAvailableTeamsMessage } from './shared.js';
 
 export const listIssueLabelsTool = defineTool({

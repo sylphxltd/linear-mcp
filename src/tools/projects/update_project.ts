@@ -1,6 +1,7 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
-import { ProjectUpdateSchema, defineTool } from './shared.js';
+import { ProjectUpdateSchema } from './shared.js';
+import { defineTool } from '../shared/tool-definition.js';
 import type { ProjectUpdateInput } from './shared.js';
 import { validateProjectUpdateArgsOrThrow } from './shared.js';
 

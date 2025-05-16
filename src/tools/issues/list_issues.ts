@@ -1,5 +1,6 @@
 import { getLinearClient } from '../../utils/linear-client.js';
-import { IssueFilterSchema, defineTool } from './shared.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { IssueFilterSchema } from './shared.js';
 import {
   type IssueFilters,
   mapIssueToDetails,

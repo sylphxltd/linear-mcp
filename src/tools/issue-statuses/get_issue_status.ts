@@ -1,4 +1,5 @@
-import { IssueStatusQuerySchema, defineTool } from '../../schemas/index.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { IssueStatusQuerySchema } from './shared.js';
 import { throwInternalError, validateTeamOrThrow } from './shared.js';
 
 export const getIssueStatusTool = defineTool({

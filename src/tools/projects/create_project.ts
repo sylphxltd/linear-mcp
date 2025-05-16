@@ -1,6 +1,7 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
-import { ProjectCreateSchema, defineTool } from './shared.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { ProjectCreateSchema } from './shared.js';
 import type { ProjectInput } from './shared.js';
 
 export const createProjectTool = defineTool({

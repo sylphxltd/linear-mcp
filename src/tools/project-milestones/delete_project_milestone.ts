@@ -1,7 +1,8 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
-import { DeleteProjectMilestoneInputSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { DeleteProjectMilestoneInputSchema } from './shared.js';
 
 export const deleteProjectMilestoneTool = defineTool({
   name: 'delete_project_milestone',
