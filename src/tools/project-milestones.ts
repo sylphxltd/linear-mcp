@@ -13,12 +13,12 @@ export const listProjectMilestonesTool = defineTool({
   name: 'list_project_milestones',
   description: 'Lists all milestones for a given project.',
   inputSchema: ListProjectMilestonesInputSchema.shape,
-  handler: async (args: z.infer<typeof ListProjectMilestonesInputSchema>) => {
+  handler: async ({ projectId }) => {
     const linear = getLinearClient();
     try {
-      const project = await linear.project(args.projectId);
+      const project = await linear.project(projectId);
       if (!project) {
-        throw new Error(`Project with ID "${args.projectId}" not found.`);
+        throw new Error(`Project with ID "${projectId}" not found.`);
       }
       // Using the hint: project.milestones()
       // TS Error: Property 'milestones' does not exist on type 'Project'.
@@ -49,7 +49,7 @@ export const createProjectMilestoneTool = defineTool({
   name: 'create_project_milestone',
   description: 'Creates a new milestone within a project.',
   inputSchema: CreateProjectMilestoneInputSchema.shape,
-  handler: async (args: z.infer<typeof CreateProjectMilestoneInputSchema>) => {
+  handler: async ({ projectId, name, description, targetDate }: z.infer<typeof CreateProjectMilestoneInputSchema>) => {
     const linear = getLinearClient();
     try {
       const payload: {
@@ -58,11 +58,11 @@ export const createProjectMilestoneTool = defineTool({
         description?: string;
         targetDate?: Date;
       } = {
-        projectId: args.projectId,
-        name: args.name,
+        projectId,
+        name,
       };
-      if (args.description) payload.description = args.description;
-      if (args.targetDate) payload.targetDate = new Date(args.targetDate);
+      if (description) payload.description = description;
+      if (targetDate) payload.targetDate = new Date(targetDate);
 
       // Using the hint: linear.projectMilestoneCreate
       // TS Error: Property 'projectMilestoneCreate' does not exist on type 'LinearClient'.
@@ -91,14 +91,13 @@ export const updateProjectMilestoneTool = defineTool({
   name: 'update_project_milestone',
   description: 'Updates an existing milestone.',
   inputSchema: UpdateProjectMilestoneInputSchema.shape,
-  handler: async (args: z.infer<typeof UpdateProjectMilestoneInputSchema>) => {
+  handler: async ({ milestoneId, name, description, targetDate }: z.infer<typeof UpdateProjectMilestoneInputSchema>) => {
     const linear = getLinearClient();
     try {
-      const { milestoneId, ...updateData } = args;
       const payload: { name?: string; description?: string; targetDate?: Date } = {};
-      if (updateData.name) payload.name = updateData.name;
-      if (updateData.description) payload.description = updateData.description;
-      if (updateData.targetDate) payload.targetDate = new Date(updateData.targetDate);
+      if (name) payload.name = name;
+      if (description) payload.description = description;
+      if (targetDate) payload.targetDate = new Date(targetDate);
 
       if (Object.keys(payload).length === 0) {
         throw new Error('No update data provided for project milestone.');
@@ -127,17 +126,15 @@ export const deleteProjectMilestoneTool = defineTool({
   name: 'delete_project_milestone',
   description: 'Deletes a milestone.',
   inputSchema: DeleteProjectMilestoneInputSchema.shape,
-  handler: async (args: z.infer<typeof DeleteProjectMilestoneInputSchema>) => {
+  handler: async ({ milestoneId }: z.infer<typeof DeleteProjectMilestoneInputSchema>) => {
     const linear = getLinearClient();
     try {
-      // Using the hint: linear.projectMilestoneDelete
-      // TS Error: Property 'projectMilestoneDelete' does not exist on type 'LinearClient'.
-      const deletePayload = await linear.deleteProjectMilestone(args.milestoneId);
+      const deletePayload = await linear.deleteProjectMilestone(milestoneId);
       if (!deletePayload.success) {
-        throw new Error(`Failed to delete project milestone "${args.milestoneId}" in Linear: Operation reported as not successful by SDK.`);
+        throw new Error(`Failed to delete project milestone "${milestoneId}" in Linear: Operation reported as not successful by SDK.`);
       }
       return {
-        content: [{ type: 'text', text: JSON.stringify({ success: true, message: `Project milestone "${args.milestoneId}" deleted successfully.` }) }],
+        content: [{ type: 'text', text: JSON.stringify({ success: true, message: `Project milestone "${milestoneId}" deleted successfully.` }) }],
       };
     } catch (error: unknown) {
       console.error('Failed to delete project milestone:', error);
