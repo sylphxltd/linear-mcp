@@ -1,5 +1,5 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { PaginationSchema, defineTool } from '../../schemas/index.js';
+import { PaginationSchema, defineTool } from '../issues/shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 
 export const listMyIssuesTool = defineTool({

@@ -1,4 +1,4 @@
-import { ProjectCreateSchema, defineTool } from '../../schemas/index.js';
+import { ProjectCreateSchema, defineTool } from './shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import type { ProjectInput } from './shared.js';

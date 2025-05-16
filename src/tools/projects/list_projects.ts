@@ -1,4 +1,4 @@
-import { ProjectFilterSchema, defineTool } from '../../schemas/index.js';
+import { ProjectFilterSchema, defineTool } from './shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import { validateTeamIdOrThrow } from './shared.js';

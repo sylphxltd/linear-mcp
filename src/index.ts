@@ -13,15 +13,14 @@ export { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 // Import Linear client
 import { LinearClientManager } from './utils/linear-client.js';
 
-import { issueStatusTools } from './tools/issue-statuses.js';
-// Import tools
-import { issueTools } from './tools/issues.js';
-import { labelTools } from './tools/labels.js';
+import { issueStatusTools } from './tools/issue-statuses/index.js';
+import { issueTools } from './tools/issues/index.js';
+import { labelTools } from './tools/labels/index.js';
 import { myIssuesTools } from './tools/my-issues.js';
-import { projectMilestoneTools } from './tools/project-milestones.js'; // Added
-import { projectTools } from './tools/projects.js';
-import { teamTools } from './tools/teams.js';
-import { userTools } from './tools/users.js';
+import { projectMilestoneTools } from './tools/project-milestones/index.js';
+import { projectTools } from './tools/projects/index.js';
+import { teamTools } from './tools/teams/index.js';
+import { userTools } from './tools/users/index.js';
 
 // Initialize the Linear client with the API key from environment variables
 const initializeLinearClient = () => {
@@ -47,7 +46,7 @@ const server = new McpServer({
 });
 
 // Combine all tools
-const allTools = {
+const allTools = [
   ...issueTools,
   ...projectTools,
   ...teamTools,
@@ -55,27 +54,16 @@ const allTools = {
   ...issueStatusTools,
   ...labelTools,
   ...myIssuesTools,
-  ...projectMilestoneTools, // Added
-};
+  ...projectMilestoneTools,
+];
 
-for (const tool of Object.values(allTools)) {
-  // Type guard to ensure tool is a ToolDefinition
-  if (
-    tool &&
-    typeof tool === 'object' &&
-    'name' in tool &&
-    'description' in tool &&
-    'inputSchema' in tool &&
-    'handler' in tool
-  ) {
-    // Register each tool with the server
-    server.tool(
-      tool.name,
-      tool.description,
-      tool.inputSchema,
-      tool.handler as unknown as ToolCallback<typeof tool.inputSchema>,
-    );
-  }
+for (const tool of allTools) {
+  server.tool(
+    tool.name,
+    tool.description,
+    tool.inputSchema,
+    tool.handler,
+  );
 }
 
 // Main function to start the server

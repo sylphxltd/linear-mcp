@@ -1,4 +1,4 @@
-import { IssueFilterSchema, defineTool } from '../../schemas/index.js';
+import { IssueFilterSchema, defineTool } from './shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import {
   validateTeam,

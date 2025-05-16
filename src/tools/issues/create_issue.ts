@@ -1,4 +1,4 @@
-import { IssueCreateSchema, defineTool } from '../../schemas/index.js';
+import { IssueCreateSchema, defineTool } from './shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import {
   validateTeam,
