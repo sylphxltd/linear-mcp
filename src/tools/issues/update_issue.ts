@@ -1,3 +1,4 @@
+import type { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { IssueUpdateSchema } from './shared.js';
@@ -15,19 +16,7 @@ export const updateIssueTool = defineTool({
   name: 'update_issue',
   description: 'Update an existing Linear issue',
   inputSchema: IssueUpdateSchema,
-  handler: async (args) => {
-    const {
-      id,
-      title,
-      description,
-      priority,
-      projectId,
-      stateId,
-      assigneeId,
-      labelIds,
-      dueDate,
-      projectMilestoneId,
-    } = args;
+  handler: async ({ id, title, description, priority, projectId, stateId, assigneeId, labelIds, dueDate, projectMilestoneId }) => {
     const linearClient = getLinearClient();
     const issueToUpdate = await validateIssueExists(linearClient, id, 'updating issue');
     const currentTeamId = (await issueToUpdate.team)?.id;
@@ -53,22 +42,19 @@ export const updateIssueTool = defineTool({
         );
       }
     }
-
-    const payload: Partial<typeof args> = {
-      title,
-      description,
-      priority,
-      projectId,
-      stateId,
-      assigneeId,
-      labelIds,
-      dueDate,
-      projectMilestoneId,
-    };
-    const updatePayload = Object.fromEntries(
-      Object.entries(payload).filter(([, v]) => v !== undefined),
-    );
-    const issueUpdate = await linearClient.updateIssue(id, updatePayload);
+ 
+     const updatePayload = {
+       ...(title !== undefined && { title }),
+       ...(description !== undefined && { description }),
+       ...(priority !== undefined && { priority }),
+       ...(projectId !== undefined && { projectId }),
+       ...(stateId !== undefined && { stateId }),
+       ...(assigneeId !== undefined && { assigneeId }),
+       ...(labelIds !== undefined && { labelIds }),
+       ...(dueDate !== undefined && { dueDate }),
+       ...(projectMilestoneId !== undefined && { projectMilestoneId }),
+     };
+     const issueUpdate = await linearClient.updateIssue(id, updatePayload);
     const updatedIssue = await issueUpdate.issue;
     if (!updatedIssue)
       throw new Error(

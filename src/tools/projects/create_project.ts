@@ -8,9 +8,8 @@ export const createProjectTool = defineTool({
   name: 'create_project',
   description: 'Create a new project in Linear',
   inputSchema: ProjectCreateSchema,
-  handler: async (args) => {
+  handler: async ({ name, description, content, startDate, targetDate, teamIds }) => {
     try {
-      const { name, description, content, startDate, targetDate, teamIds } = args;
       const projectInput: ProjectInput = {
         name,
         teamIds,

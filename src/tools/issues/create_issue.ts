@@ -15,19 +15,7 @@ export const createIssueTool = defineTool({
   name: 'create_issue',
   description: 'Create a new Linear issue',
   inputSchema: IssueCreateSchema,
-  handler: async (args) => {
-    const {
-      title,
-      description,
-      teamId,
-      priority,
-      projectId,
-      stateId,
-      assigneeId,
-      labelIds,
-      dueDate,
-      projectMilestoneId,
-    } = args;
+  handler: async ({ title, description, teamId, priority, projectId, stateId, assigneeId, labelIds, dueDate, projectMilestoneId }) => {
     const linearClient = getLinearClient();
     await validateTeam(linearClient, teamId, 'creating issue');
     if (projectId) await validateProject(linearClient, projectId, 'creating issue');

@@ -8,9 +8,8 @@ export const listProjectsTool = defineTool({
   name: 'list_projects',
   description: "List projects in the user's Linear workspace",
   inputSchema: ProjectFilterSchema,
-  handler: async (args) => {
+  handler: async ({ limit, before, after, includeArchived, teamId }) => {
     try {
-      const { limit, before, after, includeArchived, teamId } = args;
       const linearClient = getLinearClient();
 
       if (teamId) {

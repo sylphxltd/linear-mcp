@@ -9,9 +9,8 @@ export const updateProjectTool = defineTool({
   name: 'update_project',
   description: 'Update an existing Linear project',
   inputSchema: ProjectUpdateSchema,
-  handler: async (args) => {
+  handler: async ({ id, name, description, content, startDate, targetDate, teamIds }) => {
     try {
-      const { id, name, description, content, startDate, targetDate, teamIds } = args;
       const linearClient = getLinearClient();
 
       await validateProjectUpdateArgsOrThrow(linearClient, id, teamIds);
