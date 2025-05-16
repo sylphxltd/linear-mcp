@@ -23,6 +23,7 @@ export const listMyIssuesTool = defineTool({
 				issues.nodes.map(async (issue) => {
 					const state = issue.state ? await issue.state : null;
 					const team = issue.team ? await issue.team : null;
+					const cycle = issue.cycle ? await issue.cycle : null;
 					return {
 						id: issue.id,
 						identifier: issue.identifier,
@@ -31,6 +32,7 @@ export const listMyIssuesTool = defineTool({
 						priority: issue.priority,
 						state: state?.name,
 						team: team?.name,
+						cycleName: cycle?.name,
 						createdAt: issue.createdAt,
 						updatedAt: issue.updatedAt,
 						url: issue.url,

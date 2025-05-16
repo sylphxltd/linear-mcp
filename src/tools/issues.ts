@@ -27,6 +27,7 @@ type IssueFilters = {
 	teamId?: string;
 	stateId?: string;
 	assigneeId?: string;
+	cycleId?: string; // Added for filtering by cycle
 	includeArchived?: boolean;
 	first?: number;
 };
@@ -42,6 +43,7 @@ export const listIssuesTool = defineTool({
 				teamId,
 				stateId,
 				assigneeId,
+				cycleId, // Added cycleId
 				includeArchived = true,
 				limit = 50,
 			} = args;
@@ -56,6 +58,9 @@ export const listIssuesTool = defineTool({
 			if (teamId) filters.teamId = teamId;
 			if (stateId) filters.stateId = stateId;
 			if (assigneeId) filters.assigneeId = assigneeId;
+			if (cycleId) filters.cycleId = cycleId; // Added cycleId to filters
+			filters.includeArchived = includeArchived; // Apply includeArchived
+			filters.first = limit; // Apply limit as first
 			const linearClient = getLinearClient();
 			const issuesConnection = await linearClient.issues(
 				filters as Parameters<typeof linearClient.issues>[0],
@@ -64,6 +69,7 @@ export const listIssuesTool = defineTool({
 				issuesConnection.nodes.map(async (issueNode: Issue) => {
 					const stateEntity = await issueNode.state;
 					const assigneeEntity = await issueNode.assignee;
+					const cycleEntity = await issueNode.cycle;
 					return {
 						id: issueNode.id,
 						identifier: issueNode.identifier,
@@ -72,6 +78,7 @@ export const listIssuesTool = defineTool({
 						priority: issueNode.priority,
 						state: stateEntity?.name,
 						assignee: assigneeEntity?.name,
+						cycleName: cycleEntity?.name,
 						createdAt: issueNode.createdAt,
 						updatedAt: issueNode.updatedAt,
 						url: issueNode.url,
@@ -116,6 +123,7 @@ export const getIssueTool = defineTool({
 			const assignee = await issue.assignee;
 			const team = await issue.team;
 			const project = await issue.project;
+			const cycle = await issue.cycle;
 			const labelsResult = await issue.labels();
 			return {
 				content: [
@@ -153,6 +161,13 @@ export const getIssueTool = defineTool({
 								? {
 										id: project.id,
 										name: project.name,
+									}
+								: null,
+							cycle: cycle
+								? {
+										id: cycle.id,
+										name: cycle.name,
+										number: cycle.number,
 									}
 								: null,
 							labels: labelsResult.nodes.map((label) => ({
@@ -198,6 +213,7 @@ export const createIssueTool = defineTool({
 				assigneeId,
 				labelIds,
 				dueDate,
+				cycleId, // Added cycleId
 			} = args;
 			const issueCreateInput: Parameters<
 				typeof LinearClient.prototype.createIssue
@@ -212,10 +228,12 @@ export const createIssueTool = defineTool({
 			if (assigneeId) issueCreateInput.assigneeId = assigneeId;
 			if (labelIds) issueCreateInput.labelIds = labelIds;
 			if (dueDate) issueCreateInput.dueDate = dueDate;
+			if (cycleId) issueCreateInput.cycleId = cycleId; // Added cycleId to input
 			const linearClient = getLinearClient();
 			const issuePayload = await linearClient.createIssue(issueCreateInput);
 			if (issuePayload.issue) {
 				const createdIssue = await issuePayload.issue;
+				const cycle = await createdIssue.cycle;
 				return {
 					content: [
 						{
@@ -225,6 +243,7 @@ export const createIssueTool = defineTool({
 								identifier: createdIssue.identifier,
 								title: createdIssue.title,
 								url: createdIssue.url,
+								cycleId: cycle?.id,
 							}),
 						},
 					],
@@ -260,8 +279,9 @@ export const updateIssueTool = defineTool({
 				assigneeId,
 				labelIds,
 				dueDate,
+				cycleId, // Added cycleId
 			} = args;
-			const issueUpdateInput: Record<string, unknown> = {};
+			const issueUpdateInput: Record<string, unknown | null> = {}; // Allow null for cycleId
 			if (title !== undefined) issueUpdateInput.title = title;
 			if (description !== undefined) issueUpdateInput.description = description;
 			if (priority !== undefined) issueUpdateInput.priority = priority;
@@ -270,10 +290,12 @@ export const updateIssueTool = defineTool({
 			if (assigneeId !== undefined) issueUpdateInput.assigneeId = assigneeId;
 			if (labelIds !== undefined) issueUpdateInput.labelIds = labelIds;
 			if (dueDate !== undefined) issueUpdateInput.dueDate = dueDate;
+			if (cycleId !== undefined) issueUpdateInput.cycleId = cycleId; // Added cycleId to input (can be null)
 			const linearClient = getLinearClient();
 			const issuePayload = await linearClient.updateIssue(id, issueUpdateInput);
 			if (issuePayload.issue) {
 				const updatedIssue = await issuePayload.issue;
+				const cycle = await updatedIssue.cycle;
 				return {
 					content: [
 						{
@@ -283,6 +305,7 @@ export const updateIssueTool = defineTool({
 								identifier: updatedIssue.identifier,
 								title: updatedIssue.title,
 								url: updatedIssue.url,
+								cycleId: cycle?.id,
 							}),
 						},
 					],

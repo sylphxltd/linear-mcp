@@ -37,6 +37,7 @@ export const IssueFilterSchema = {
 	teamId: z.string().optional().describe("The team UUID"),
 	stateId: z.string().optional().describe("The state UUID"),
 	assigneeId: z.string().optional().describe("The assignee UUID"),
+	cycleId: z.string().optional().describe("The cycle UUID to filter by"),
 	includeArchived: z
 		.boolean()
 		.default(true)
@@ -71,6 +72,7 @@ export const IssueCreateSchema = {
 		.string()
 		.optional()
 		.describe("The due date for the issue in ISO format"),
+	cycleId: z.string().optional().describe("The cycle ID to assign the issue to"),
 };
 
 export const IssueUpdateSchema = {
@@ -100,6 +102,13 @@ export const IssueUpdateSchema = {
 		.string()
 		.optional()
 		.describe("The due date for the issue in ISO format"),
+	cycleId: z
+		.string()
+		.optional()
+		.nullable()
+		.describe(
+			"The cycle ID to assign the issue to. Pass null to remove from cycle.",
+		),
 };
 
 export const CommentCreateSchema = {
