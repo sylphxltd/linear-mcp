@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.3.3
+
+### Patch Changes
+
+- 2953433: fix: missing order by enum
+
 ## 1.3.2
 
 ### Patch Changes
