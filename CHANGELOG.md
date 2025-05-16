@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.1.0
+
+### Minor Changes
+
+- 17c4627: support cycle
+
 ## 1.0.2
 
 ### Patch Changes
