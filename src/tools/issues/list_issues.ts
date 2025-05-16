@@ -1,12 +1,12 @@
-import { IssueFilterSchema, defineTool } from './shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { IssueFilterSchema, defineTool } from './shared.js';
 import {
-  validateTeam,
-  validateState,
+  type IssueFilters,
+  mapIssueToDetails,
   validateAssignee,
   validateProjectMilestone,
-  mapIssueToDetails,
-  type IssueFilters,
+  validateState,
+  validateTeam,
 } from './shared.js';
 async function validateListIssuesInput(
   linearClient: ReturnType<typeof getLinearClient>,

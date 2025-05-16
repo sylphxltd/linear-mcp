@@ -1,6 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { defineTool } from './shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { defineTool } from './shared.js';
 
 export const listTeamsTool = defineTool({
   name: 'list_teams',

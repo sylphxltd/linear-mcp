@@ -10,6 +10,18 @@ export const getIssueGitBranchNameTool = defineTool({
     const linearClient = getLinearClient();
     const issue = await validateIssueExists(linearClient, id, 'getting git branch name');
     const branchName = await issue.branchName;
-    return { content: [{ type: 'text', text: JSON.stringify({ id: issue.id, identifier: issue.identifier, title: issue.title, branchName }) }] };
+    return {
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            id: issue.id,
+            identifier: issue.identifier,
+            title: issue.title,
+            branchName,
+          }),
+        },
+      ],
+    };
   },
 });

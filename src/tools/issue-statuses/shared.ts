@@ -1,5 +1,5 @@
-import { z } from 'zod';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 
 // --- Tool definition utility (local copy) ---
@@ -9,7 +9,9 @@ export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
   inputSchema: T;
   handler: import('@modelcontextprotocol/sdk/server/mcp.js').ToolCallback<T>;
 }
-export const defineTool = <T extends z.ZodRawShape>(tool: ToolDefinition<T>): ToolDefinition<T> => ({
+export const defineTool = <T extends z.ZodRawShape>(
+  tool: ToolDefinition<T>,
+): ToolDefinition<T> => ({
   name: tool.name,
   description: tool.description,
   inputSchema: tool.inputSchema,
@@ -54,8 +56,5 @@ export async function validateTeamOrThrow(teamId: string) {
 
 export function throwInternalError(message: string, error: unknown): never {
   const err = error as { message?: string };
-  throw new McpError(
-    ErrorCode.InternalError,
-    `${message}: ${err.message || 'Unknown error'}`,
-  );
+  throw new McpError(ErrorCode.InternalError, `${message}: ${err.message || 'Unknown error'}`);
 }

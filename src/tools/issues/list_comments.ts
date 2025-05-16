@@ -1,8 +1,8 @@
+import type { Comment as LinearComment } from '@linear/sdk';
 import { z } from 'zod';
 import { defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { validateIssueExists } from './shared.js';
-import type { Comment as LinearComment } from '@linear/sdk';
 
 export const listCommentsTool = defineTool({
   name: 'list_comments',

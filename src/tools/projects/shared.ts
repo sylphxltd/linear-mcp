@@ -1,6 +1,6 @@
-import { z } from 'zod';
 import type { LinearClient } from '@linear/sdk';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 // --- Tool definition utility (local copy) ---
 export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
@@ -9,7 +9,9 @@ export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
   inputSchema: T;
   handler: import('@modelcontextprotocol/sdk/server/mcp.js').ToolCallback<T>;
 }
-export const defineTool = <T extends z.ZodRawShape>(tool: ToolDefinition<T>): ToolDefinition<T> => ({
+export const defineTool = <T extends z.ZodRawShape>(
+  tool: ToolDefinition<T>,
+): ToolDefinition<T> => ({
   name: tool.name,
   description: tool.description,
   inputSchema: tool.inputSchema,
@@ -103,7 +105,10 @@ export type ProjectUpdateInput = {
 };
 
 // Validate teamId
-export async function validateTeamIdOrThrow(linearClient: LinearClient, teamId: string): Promise<void> {
+export async function validateTeamIdOrThrow(
+  linearClient: LinearClient,
+  teamId: string,
+): Promise<void> {
   try {
     const team = await linearClient.team(teamId);
     if (!team) {
@@ -142,10 +147,7 @@ export async function validateTeamIdOrThrow(linearClient: LinearClient, teamId: 
     );
   }
 }
-async function assertValidProjectId(
-  linearClient: LinearClient,
-  projectId: string,
-): Promise<void> {
+async function assertValidProjectId(linearClient: LinearClient, projectId: string): Promise<void> {
   try {
     const projectToUpdate = await linearClient.project(projectId);
     if (!projectToUpdate) {
@@ -185,10 +187,7 @@ async function assertValidProjectId(
   }
 }
 
-async function assertValidTeamIds(
-  linearClient: LinearClient,
-  teamIds?: string[],
-): Promise<void> {
+async function assertValidTeamIds(linearClient: LinearClient, teamIds?: string[]): Promise<void> {
   if (teamIds && teamIds.length > 0) {
     const availableTeams = await linearClient.teams();
     const validTeamIds = availableTeams.nodes.map((team) => team.id);

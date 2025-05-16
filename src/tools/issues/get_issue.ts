@@ -1,6 +1,6 @@
 import { IdSchema, defineTool } from '../../schemas/index.js';
 import { getLinearClient } from '../../utils/linear-client.js';
-import { validateIssueExists, mapIssueToDetails } from './shared.js';
+import { mapIssueToDetails, validateIssueExists } from './shared.js';
 
 export const getIssueTool = defineTool({
   name: 'get_issue',

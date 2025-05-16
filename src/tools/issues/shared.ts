@@ -1,5 +1,3 @@
-// Shared types, mapping, and validation utilities for issues tools
-import { z } from 'zod';
 import type {
   Attachment,
   Issue,
@@ -13,6 +11,8 @@ import type {
 } from '@linear/sdk';
 import { PaginationOrderBy } from '@linear/sdk/dist/_generated_documents.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+// Shared types, mapping, and validation utilities for issues tools
+import { z } from 'zod';
 
 // --- Tool definition utility (local copy) ---
 export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
@@ -21,7 +21,9 @@ export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
   inputSchema: T;
   handler: import('@modelcontextprotocol/sdk/server/mcp.js').ToolCallback<T>;
 }
-export const defineTool = <T extends z.ZodRawShape>(tool: ToolDefinition<T>): ToolDefinition<T> => ({
+export const defineTool = <T extends z.ZodRawShape>(
+  tool: ToolDefinition<T>,
+): ToolDefinition<T> => ({
   name: tool.name,
   description: tool.description,
   inputSchema: tool.inputSchema,
@@ -125,7 +127,10 @@ export async function getAvailableProjectsJson(linearClient: LinearClient): Prom
     return `"(Could not fetch available projects as JSON: ${(e as Error).message})"`;
   }
 }
-export async function getAvailableStatesJson(linearClient: LinearClient, teamId: string): Promise<string> {
+export async function getAvailableStatesJson(
+  linearClient: LinearClient,
+  teamId: string,
+): Promise<string> {
   if (!teamId) return `"(Cannot fetch states without a valid teamId.)"`;
   try {
     const team = await linearClient.team(teamId);
@@ -155,7 +160,10 @@ export async function getAvailableAssigneesJson(linearClient: LinearClient): Pro
     return `"(Could not fetch available assignees as JSON: ${(e as Error).message})"`;
   }
 }
-export async function getAvailableLabelsJson(linearClient: LinearClient, teamId: string): Promise<string> {
+export async function getAvailableLabelsJson(
+  linearClient: LinearClient,
+  teamId: string,
+): Promise<string> {
   if (!teamId) return `"(Cannot fetch labels without a valid teamId.)"`;
   try {
     const team = await linearClient.team(teamId);
@@ -238,16 +246,20 @@ export type IssueFilters = {
 };
 
 // --- Mapping ---
-export async function mapIssueToDetails(issue: Issue, includeAttachments = false): Promise<SimplifiedIssueDetails> {
-  const [state, assignee, team, project, projectMilestone, labelsResult, attachmentsResult] = await Promise.all([
-    issue.state,
-    issue.assignee,
-    issue.team,
-    issue.project,
-    issue.projectMilestone,
-    issue.labels(),
-    includeAttachments ? issue.attachments() : Promise.resolve(null),
-  ]);
+export async function mapIssueToDetails(
+  issue: Issue,
+  includeAttachments = false,
+): Promise<SimplifiedIssueDetails> {
+  const [state, assignee, team, project, projectMilestone, labelsResult, attachmentsResult] =
+    await Promise.all([
+      issue.state,
+      issue.assignee,
+      issue.team,
+      issue.project,
+      issue.projectMilestone,
+      issue.labels(),
+      includeAttachments ? issue.attachments() : Promise.resolve(null),
+    ]);
 
   return {
     id: issue.id,
@@ -259,20 +271,23 @@ export async function mapIssueToDetails(issue: Issue, includeAttachments = false
     assignee: assignee ? { id: assignee.id, name: assignee.name, email: assignee.email } : null,
     team: team ? { id: team.id, name: team.name, key: team.key } : null,
     project: project ? { id: project.id, name: project.name } : null,
-    projectMilestone: projectMilestone ? { id: projectMilestone.id, name: projectMilestone.name } : null,
+    projectMilestone: projectMilestone
+      ? { id: projectMilestone.id, name: projectMilestone.name }
+      : null,
     labels: labelsResult.nodes.map((l) => ({ id: l.id, name: l.name, color: l.color })),
-    attachments: includeAttachments && attachmentsResult
-      ? attachmentsResult.nodes.map((att: Attachment) => ({
-          id: att.id,
-          title: att.title,
-          url: att.url,
-          source: att.source,
-          metadata: att.metadata,
-          groupBySource: att.groupBySource,
-          createdAt: att.createdAt,
-          updatedAt: att.updatedAt,
-        }))
-      : undefined,
+    attachments:
+      includeAttachments && attachmentsResult
+        ? attachmentsResult.nodes.map((att: Attachment) => ({
+            id: att.id,
+            title: att.title,
+            url: att.url,
+            source: att.source,
+            metadata: att.metadata,
+            groupBySource: att.groupBySource,
+            createdAt: att.createdAt,
+            updatedAt: att.updatedAt,
+          }))
+        : undefined,
     createdAt: issue.createdAt,
     updatedAt: issue.updatedAt,
     url: issue.url,
@@ -289,7 +304,8 @@ export async function handleLinearError(
 ): Promise<never> {
   if (error instanceof McpError) throw error;
   const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-  const availableJson = typeof getAvailableJsonFn === 'function' ? await getAvailableJsonFn() : getAvailableJsonFn;
+  const availableJson =
+    typeof getAvailableJsonFn === 'function' ? await getAvailableJsonFn() : getAvailableJsonFn;
   let specificMessage = `Invalid ${entityType}Id: '${entityId}'. ${contextMessage}.`;
 
   if (err.extensions?.userPresentableMessage) {
@@ -308,65 +324,115 @@ export async function handleLinearError(
   } else {
     specificMessage = `${specificMessage} An unknown error occurred during ${entityType} validation.`;
   }
-  throw new McpError(ErrorCode.InvalidParams, `${specificMessage} Valid ${entityType}s are: ${availableJson}`);
+  throw new McpError(
+    ErrorCode.InvalidParams,
+    `${specificMessage} Valid ${entityType}s are: ${availableJson}`,
+  );
 }
 
-export async function validateTeam(linearClient: LinearClient, teamId: string, operationContext = ''): Promise<Team> {
+export async function validateTeam(
+  linearClient: LinearClient,
+  teamId: string,
+  operationContext = '',
+): Promise<Team> {
   try {
     const team = await linearClient.team(teamId);
     if (!team) {
       const msg = operationContext ? `${operationContext}: ` : '';
-      throw new McpError(ErrorCode.InvalidParams, `${msg}Team with ID '${teamId}' not found. Valid teams are: ${await getAvailableTeamsJson(linearClient)}`);
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${msg}Team with ID '${teamId}' not found. Valid teams are: ${await getAvailableTeamsJson(linearClient)}`,
+      );
     }
     return team;
   } catch (e) {
-    return handleLinearError(e, 'team', teamId, operationContext, () => getAvailableTeamsJson(linearClient));
+    return handleLinearError(e, 'team', teamId, operationContext, () =>
+      getAvailableTeamsJson(linearClient),
+    );
   }
 }
 
-export async function validateProject(linearClient: LinearClient, projectId: string, operationContext = ''): Promise<Project> {
+export async function validateProject(
+  linearClient: LinearClient,
+  projectId: string,
+  operationContext = '',
+): Promise<Project> {
   try {
     const project = await linearClient.project(projectId);
     if (!project) {
       const msg = operationContext ? `${operationContext}: ` : '';
-      throw new McpError(ErrorCode.InvalidParams, `${msg}Project with ID '${projectId}' not found. Valid projects are: ${await getAvailableProjectsJson(linearClient)}`);
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${msg}Project with ID '${projectId}' not found. Valid projects are: ${await getAvailableProjectsJson(linearClient)}`,
+      );
     }
     return project;
   } catch (e) {
-    return handleLinearError(e, 'project', projectId, operationContext, () => getAvailableProjectsJson(linearClient));
+    return handleLinearError(e, 'project', projectId, operationContext, () =>
+      getAvailableProjectsJson(linearClient),
+    );
   }
 }
 
-export async function validateState(linearClient: LinearClient, teamId: string, stateId: string, operationContext = ''): Promise<WorkflowState> {
+export async function validateState(
+  linearClient: LinearClient,
+  teamId: string,
+  stateId: string,
+  operationContext = '',
+): Promise<WorkflowState> {
   const team = await validateTeam(linearClient, teamId, `for state validation ${operationContext}`);
   try {
     const states = await team.states({ filter: { id: { eq: stateId } } });
     if (!states.nodes || states.nodes.length === 0) {
       const msg = operationContext ? `${operationContext}: ` : '';
-      throw new McpError(ErrorCode.InvalidParams, `${msg}State with ID '${stateId}' not found for team '${team.name}'. Valid states are: ${await getAvailableStatesJson(linearClient, teamId)}`);
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${msg}State with ID '${stateId}' not found for team '${team.name}'. Valid states are: ${await getAvailableStatesJson(linearClient, teamId)}`,
+      );
     }
     return states.nodes[0];
   } catch (e) {
-    return handleLinearError(e, 'state', stateId, `for team '${team.name}' ${operationContext}`, () => getAvailableStatesJson(linearClient, teamId));
+    return handleLinearError(
+      e,
+      'state',
+      stateId,
+      `for team '${team.name}' ${operationContext}`,
+      () => getAvailableStatesJson(linearClient, teamId),
+    );
   }
 }
 
-export async function validateAssignee(linearClient: LinearClient, assigneeId: string, operationContext = ''): Promise<User> {
+export async function validateAssignee(
+  linearClient: LinearClient,
+  assigneeId: string,
+  operationContext = '',
+): Promise<User> {
   try {
     const assignee = await linearClient.user(assigneeId);
     if (!assignee || !assignee.active) {
       const msg = operationContext ? `${operationContext}: ` : '';
       let userStatus = 'User not found.';
-      if (assignee && !assignee.active) userStatus = `User '${assignee.displayName}' is not active.`;
-      throw new McpError(ErrorCode.InvalidParams, `${msg}Assignee with ID '${assigneeId}' is invalid. ${userStatus} Valid assignees are: ${await getAvailableAssigneesJson(linearClient)}`);
+      if (assignee && !assignee.active)
+        userStatus = `User '${assignee.displayName}' is not active.`;
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${msg}Assignee with ID '${assigneeId}' is invalid. ${userStatus} Valid assignees are: ${await getAvailableAssigneesJson(linearClient)}`,
+      );
     }
     return assignee;
   } catch (e) {
-    return handleLinearError(e, 'assignee', assigneeId, operationContext, () => getAvailableAssigneesJson(linearClient));
+    return handleLinearError(e, 'assignee', assigneeId, operationContext, () =>
+      getAvailableAssigneesJson(linearClient),
+    );
   }
 }
 
-export async function validateLabels(linearClient: LinearClient, teamId: string, labelIds: string[], operationContext = ''): Promise<void> {
+export async function validateLabels(
+  linearClient: LinearClient,
+  teamId: string,
+  labelIds: string[],
+  operationContext = '',
+): Promise<void> {
   const team = await validateTeam(linearClient, teamId, `for label validation ${operationContext}`);
   try {
     const labels = await team.labels({ filter: { id: { in: labelIds } } });
@@ -374,47 +440,92 @@ export async function validateLabels(linearClient: LinearClient, teamId: string,
     const notFoundLabelIds = labelIds.filter((id) => !foundLabelIds.includes(id));
     if (notFoundLabelIds.length > 0) {
       const msg = operationContext ? `${operationContext}: ` : '';
-      throw new McpError(ErrorCode.InvalidParams, `${msg}Label(s) with ID(s) '${notFoundLabelIds.join(', ')}' not found for team '${team.name}'. Valid labels are: ${await getAvailableLabelsJson(linearClient, teamId)}`);
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${msg}Label(s) with ID(s) '${notFoundLabelIds.join(', ')}' not found for team '${team.name}'. Valid labels are: ${await getAvailableLabelsJson(linearClient, teamId)}`,
+      );
     }
   } catch (e) {
-    return handleLinearError(e, 'label(s)', labelIds.join(', '), `for team '${team.name}' ${operationContext}`, () => getAvailableLabelsJson(linearClient, teamId));
+    return handleLinearError(
+      e,
+      'label(s)',
+      labelIds.join(', '),
+      `for team '${team.name}' ${operationContext}`,
+      () => getAvailableLabelsJson(linearClient, teamId),
+    );
   }
 }
 
-export async function validateProjectMilestone(linearClient: LinearClient, projectMilestoneId: string, forProjectId?: string | null, operationContext = ''): Promise<ProjectMilestone> {
+export async function validateProjectMilestone(
+  linearClient: LinearClient,
+  projectMilestoneId: string,
+  forProjectId?: string | null,
+  operationContext = '',
+): Promise<ProjectMilestone> {
   try {
     const milestone = await linearClient.projectMilestone(projectMilestoneId);
     if (!milestone) {
       const msg = operationContext ? `${operationContext}: ` : '';
-      throw new McpError(ErrorCode.InvalidParams, `${msg}Project milestone with ID '${projectMilestoneId}' not found. ${await getAvailableProjectMilestonesJson(linearClient, forProjectId ?? undefined)}`);
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${msg}Project milestone with ID '${projectMilestoneId}' not found. ${await getAvailableProjectMilestonesJson(linearClient, forProjectId ?? undefined)}`,
+      );
     }
     if (forProjectId && milestone.projectId !== forProjectId) {
       const targetProject = await linearClient.project(forProjectId);
       const actualProject = await milestone.project;
-      throw new McpError(ErrorCode.InvalidParams, `Project milestone '${milestone.name}' (${projectMilestoneId}) does not belong to project '${targetProject?.name ?? forProjectId}'. It belongs to '${actualProject?.name ?? milestone.projectId}'.`);
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `Project milestone '${milestone.name}' (${projectMilestoneId}) does not belong to project '${targetProject?.name ?? forProjectId}'. It belongs to '${actualProject?.name ?? milestone.projectId}'.`,
+      );
     }
     return milestone;
   } catch (e) {
-    return handleLinearError(e, 'project milestone', projectMilestoneId, operationContext, () => getAvailableProjectMilestonesJson(linearClient, forProjectId ?? undefined));
+    return handleLinearError(e, 'project milestone', projectMilestoneId, operationContext, () =>
+      getAvailableProjectMilestonesJson(linearClient, forProjectId ?? undefined),
+    );
   }
 }
 
-export async function validateIssueExists(linearClient: LinearClient, issueId: string, operationContext = ''): Promise<Issue> {
+export async function validateIssueExists(
+  linearClient: LinearClient,
+  issueId: string,
+  operationContext = '',
+): Promise<Issue> {
   try {
     const issue = await linearClient.issue(issueId);
     if (!issue) {
       let recentIssuesMessage = '';
       try {
-        const recentIssues = await linearClient.issues({ first: 5, orderBy: PaginationOrderBy.UpdatedAt });
+        const recentIssues = await linearClient.issues({
+          first: 5,
+          orderBy: PaginationOrderBy.UpdatedAt,
+        });
         if (recentIssues.nodes.length > 0) {
-          recentIssuesMessage = ` Recent issues: ${JSON.stringify(recentIssues.nodes.map(iss => ({id: iss.id, title: iss.title, identifier: iss.identifier})), null, 2)}`;
+          recentIssuesMessage = ` Recent issues: ${JSON.stringify(
+            recentIssues.nodes.map((iss) => ({
+              id: iss.id,
+              title: iss.title,
+              identifier: iss.identifier,
+            })),
+            null,
+            2,
+          )}`;
         }
-      } catch { /* ignore */ }
-      throw new McpError(ErrorCode.InvalidParams, `${operationContext}: Issue with ID '${issueId}' not found.${recentIssuesMessage}`);
+      } catch {
+        /* ignore */
+      }
+      throw new McpError(
+        ErrorCode.InvalidParams,
+        `${operationContext}: Issue with ID '${issueId}' not found.${recentIssuesMessage}`,
+      );
     }
     return issue;
   } catch (e) {
     if (e instanceof McpError) throw e;
-    throw new McpError(ErrorCode.InternalError, `Error fetching issue '${issueId}' for ${operationContext}: ${(e as Error).message}`);
+    throw new McpError(
+      ErrorCode.InternalError,
+      `Error fetching issue '${issueId}' for ${operationContext}: ${(e as Error).message}`,
+    );
   }
 }

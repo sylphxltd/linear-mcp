@@ -11,11 +11,23 @@ export const createCommentTool = defineTool({
     await validateIssueExists(linearClient, issueId, 'creating comment');
     const commentPayload = await linearClient.createComment({ issueId, body });
     const newComment = await commentPayload.comment;
-    if (!newComment) throw new Error(`Failed to create comment or retrieve details. Sync ID: ${commentPayload.lastSyncId}`);
+    if (!newComment)
+      throw new Error(
+        `Failed to create comment or retrieve details. Sync ID: ${commentPayload.lastSyncId}`,
+      );
     return {
-      content: [{ type: 'text', text: JSON.stringify({
-        id: newComment.id, body: newComment.body, createdAt: newComment.createdAt, updatedAt: newComment.updatedAt, userId: newComment.userId,
-      })}]
+      content: [
+        {
+          type: 'text',
+          text: JSON.stringify({
+            id: newComment.id,
+            body: newComment.body,
+            createdAt: newComment.createdAt,
+            updatedAt: newComment.updatedAt,
+            userId: newComment.userId,
+          }),
+        },
+      ],
     };
   },
 });

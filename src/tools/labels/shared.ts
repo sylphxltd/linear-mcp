@@ -1,6 +1,6 @@
-import { z } from 'zod';
 import type { Issue, IssueLabel, Team } from '@linear/sdk';
 import type { LinearClient } from '@linear/sdk';
+import { z } from 'zod';
 
 // --- Tool definition utility (local copy) ---
 export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
@@ -9,7 +9,9 @@ export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
   inputSchema: T;
   handler: import('@modelcontextprotocol/sdk/server/mcp.js').ToolCallback<T>;
 }
-export const defineTool = <T extends z.ZodRawShape>(tool: ToolDefinition<T>): ToolDefinition<T> => ({
+export const defineTool = <T extends z.ZodRawShape>(
+  tool: ToolDefinition<T>,
+): ToolDefinition<T> => ({
   name: tool.name,
   description: tool.description,
   inputSchema: tool.inputSchema,
@@ -43,9 +45,7 @@ export async function getAvailableTeamsMessage(linearClient: LinearClient): Prom
 /**
  * Formats an array of label nodes for output.
  */
-export function formatLabelNodes(
-  labels: IssueLabel[],
-): object[] {
+export function formatLabelNodes(labels: IssueLabel[]): object[] {
   return labels.map((label) => ({
     id: label.id,
     name: label.name,
@@ -55,13 +55,13 @@ export function formatLabelNodes(
       label.createdAt instanceof Date
         ? label.createdAt.toISOString()
         : typeof label.createdAt === 'string'
-        ? label.createdAt
-        : undefined,
+          ? label.createdAt
+          : undefined,
     updatedAt:
       label.updatedAt instanceof Date
         ? label.updatedAt.toISOString()
         : typeof label.updatedAt === 'string'
-        ? label.updatedAt
-        : undefined,
+          ? label.updatedAt
+          : undefined,
   }));
 }

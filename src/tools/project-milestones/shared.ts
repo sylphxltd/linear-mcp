@@ -1,6 +1,6 @@
-import { z } from 'zod';
 import type { LinearClient, Project, ProjectMilestone } from '@linear/sdk';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 // --- Tool definition utility (local copy) ---
 export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
@@ -9,7 +9,9 @@ export interface ToolDefinition<T extends z.ZodRawShape = z.ZodRawShape> {
   inputSchema: T;
   handler: import('@modelcontextprotocol/sdk/server/mcp.js').ToolCallback<T>;
 }
-export const defineTool = <T extends z.ZodRawShape>(tool: ToolDefinition<T>): ToolDefinition<T> => ({
+export const defineTool = <T extends z.ZodRawShape>(
+  tool: ToolDefinition<T>,
+): ToolDefinition<T> => ({
   name: tool.name,
   description: tool.description,
   inputSchema: tool.inputSchema,
@@ -37,7 +39,9 @@ export const DeleteProjectMilestoneInputSchema = z.object({
 });
 
 // Helper function to get available projects for error messages
-export async function getAvailableProjectsJsonForError(linearClient: LinearClient): Promise<string> {
+export async function getAvailableProjectsJsonForError(
+  linearClient: LinearClient,
+): Promise<string> {
   try {
     const projects = await linearClient.projects();
     if (!projects.nodes || projects.nodes.length === 0) {

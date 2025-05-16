@@ -1,6 +1,6 @@
-import { ProjectFilterSchema, defineTool } from './shared.js';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
-import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
+import { ProjectFilterSchema, defineTool } from './shared.js';
 import { validateTeamIdOrThrow } from './shared.js';
 
 export const listProjectsTool = defineTool({

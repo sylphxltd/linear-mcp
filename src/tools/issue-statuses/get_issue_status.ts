@@ -1,5 +1,5 @@
 import { IssueStatusQuerySchema, defineTool } from '../../schemas/index.js';
-import { validateTeamOrThrow, throwInternalError } from './shared.js';
+import { throwInternalError, validateTeamOrThrow } from './shared.js';
 
 export const getIssueStatusTool = defineTool({
   name: 'get_issue_status',
@@ -36,7 +36,7 @@ export const getIssueStatusTool = defineTool({
         type: s.type,
       }));
       throw new Error(
-        `Issue status with query "${query}" not found in team '${team.name}' (${teamId}). Valid statuses for this team are: ${JSON.stringify(validStatuses, null, 2)}`
+        `Issue status with query "${query}" not found in team '${team.name}' (${teamId}). Valid statuses for this team are: ${JSON.stringify(validStatuses, null, 2)}`,
       );
     } catch (error: unknown) {
       throwInternalError('Failed to get issue status', error);

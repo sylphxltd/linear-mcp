@@ -1,6 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { TeamQuerySchema, defineTool } from './shared.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { TeamQuerySchema, defineTool } from './shared.js';
 
 export const getTeamTool = defineTool({
   name: 'get_team',

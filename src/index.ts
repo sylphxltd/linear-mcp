@@ -58,12 +58,7 @@ const allTools = [
 ];
 
 for (const tool of allTools) {
-  server.tool(
-    tool.name,
-    tool.description,
-    tool.inputSchema,
-    tool.handler,
-  );
+  server.tool(tool.name, tool.description, tool.inputSchema, tool.handler);
 }
 
 // Main function to start the server
