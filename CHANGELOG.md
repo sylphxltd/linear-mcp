@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.1.1
+
+### Patch Changes
+
+- c1ec30d: fix node support version
+
 ## 1.1.0
 
 ### Minor Changes
