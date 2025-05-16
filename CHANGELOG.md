@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.3.1
+
+### Patch Changes
+
+- modularize all tools, remove centralized schema, unify exports, breaking file structure refactor
+
 ## 1.3.0
 
 ### Minor Changes
