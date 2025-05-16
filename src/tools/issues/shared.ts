@@ -1,15 +1,15 @@
-import type {
-  Attachment,
-  Issue,
-  IssuePayload,
-  LinearClient,
-  Project,
-  ProjectMilestone,
-  Team,
-  User,
-  WorkflowState,
+import {
+  LinearDocument,
+  type Attachment,
+  type Issue,
+  type IssuePayload,
+  type LinearClient,
+  type Project,
+  type ProjectMilestone,
+  type Team,
+  type User,
+  type WorkflowState,
 } from '@linear/sdk';
-import { PaginationOrderBy } from '@linear/sdk/dist/_generated_documents.js';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 // Shared types, mapping, and validation utilities for issues tools
 import { z } from 'zod';
@@ -485,7 +485,7 @@ export async function validateIssueExists(
       try {
         const recentIssues = await linearClient.issues({
           first: 5,
-          orderBy: PaginationOrderBy.UpdatedAt,
+          orderBy: LinearDocument.PaginationOrderBy.UpdatedAt,
         });
         if (recentIssues.nodes.length > 0) {
           recentIssuesMessage = ` Recent issues: ${JSON.stringify(
