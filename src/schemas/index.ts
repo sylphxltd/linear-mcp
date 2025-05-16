@@ -169,6 +169,10 @@ export const ProjectUpdateSchema = {
 		.string()
 		.optional()
 		.describe("The target date of the project in ISO format"),
+	teamIds: z
+		.array(z.string())
+		.optional()
+		.describe("The UUIDs of the teams to associate the project with"),
 };
 
 // Project Milestone schemas
