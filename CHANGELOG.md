@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.3.2
+
+### Patch Changes
+
+- d1fd10e: bugfix: types
+
 ## 1.3.1
 
 ### Patch Changes
