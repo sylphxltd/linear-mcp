@@ -15,9 +15,21 @@ export const listIssueStatusesTool = defineTool({
 		try {
 			const team = await linearClient.team(teamId);
 			if (!team) {
+				let availableTeamsMessage = "";
+				try {
+					const allTeams = await linearClient.teams();
+					if (allTeams.nodes.length > 0) {
+						const teamList = allTeams.nodes.map(t => ({ id: t.id, name: t.name }));
+						availableTeamsMessage = ` Valid teams are: ${JSON.stringify(teamList, null, 2)}`;
+					} else {
+						availableTeamsMessage = " No teams available to list.";
+					}
+				} catch (listError) {
+					availableTeamsMessage = " (Could not fetch available teams for context.)";
+				}
 				throw new McpError(
-					ErrorCode.MethodNotFound,
-					`Team with ID ${teamId} not found`,
+					ErrorCode.InvalidParams,
+					`Team with ID '${teamId}' not found when trying to list issue statuses.${availableTeamsMessage}`
 				);
 			}
 			const states = await team.states();
@@ -58,9 +70,21 @@ export const getIssueStatusTool = defineTool({
 		try {
 			const team = await linearClient.team(teamId);
 			if (!team) {
+				let availableTeamsMessage = "";
+				try {
+					const allTeams = await linearClient.teams();
+					if (allTeams.nodes.length > 0) {
+						const teamList = allTeams.nodes.map(t => ({ id: t.id, name: t.name }));
+						availableTeamsMessage = ` Valid teams are: ${JSON.stringify(teamList, null, 2)}`;
+					} else {
+						availableTeamsMessage = " No teams available to list.";
+					}
+				} catch (listError) {
+					availableTeamsMessage = " (Could not fetch available teams for context.)";
+				}
 				throw new McpError(
-					ErrorCode.MethodNotFound,
-					`Team with ID ${teamId} not found`,
+					ErrorCode.InvalidParams,
+					`Team with ID '${teamId}' not found when trying to get issue status.${availableTeamsMessage}`
 				);
 			}
 			const states = await team.states();
@@ -87,11 +111,14 @@ export const getIssueStatusTool = defineTool({
 					],
 				};
 			}
+			// If status not found by ID or name, fetch all statuses for this team and include in error message
+			const validStatuses = states.nodes.map(s => ({ id: s.id, name: s.name, type: s.type }));
 			throw new McpError(
-				ErrorCode.MethodNotFound,
-				`Issue status with ID or name "${query}" not found in team ${teamId}`,
+				ErrorCode.InvalidParams,
+				`Issue status with query "${query}" not found in team '${team.name}' (${teamId}). Valid statuses for this team are: ${JSON.stringify(validStatuses, null, 2)}`,
 			);
 		} catch (error: unknown) {
+			if (error instanceof McpError) throw error; // Re-throw if already an McpError (e.g. from team validation)
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,

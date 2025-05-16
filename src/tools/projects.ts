@@ -38,8 +38,40 @@ async function getAvailableProjectsMessage(linearClient: LinearClient): Promise<
   } catch (e) {
     console.error("Failed to fetch available projects for error message:", e);
     return "\n(Could not fetch available projects due to an internal error.)";
-  }
-}
+     }
+   }
+   
+   // New helper function for teams as JSON
+   async function getAvailableTeamsJson(linearClient: LinearClient): Promise<string> {
+     try {
+       const teams = await linearClient.teams();
+       if (!teams.nodes || teams.nodes.length === 0) {
+         return "[]"; // Return an empty JSON array string
+       }
+       const teamList = teams.nodes.map((team) => ({ id: team.id, name: team.name }));
+       return JSON.stringify(teamList, null, 2);
+     } catch (e) {
+       const error = e as Error;
+       console.error("Failed to fetch available teams for error message (JSON):", error.message);
+       return `"(Could not fetch available teams as JSON: ${error.message})"`; // Encapsulate error in string
+     }
+   }
+   
+   // New helper function for projects as JSON
+   async function getAvailableProjectsJson(linearClient: LinearClient): Promise<string> {
+     try {
+       const projects = await linearClient.projects();
+       if (!projects.nodes || projects.nodes.length === 0) {
+         return "[]"; // Return an empty JSON array string
+       }
+       const projectList = projects.nodes.map((project) => ({ id: project.id, name: project.name }));
+       return JSON.stringify(projectList, null, 2);
+     } catch (e) {
+       const error = e as Error;
+       console.error("Failed to fetch available projects for error message (JSON):", error.message);
+       return `"(Could not fetch available projects as JSON: ${error.message})"`; // Encapsulate error in string
+     }
+   }
 
 // Define proper types for the Linear API
 type ProjectFilters = {
@@ -81,15 +113,15 @@ export const listProjectsTool = defineTool({
 				try {
 					const team = await linearClient.team(teamId); // Attempt to fetch the team
 					if (!team) { // If team is null or undefined, it's not found
-						const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+						const availableTeamsJsonString = await getAvailableTeamsJson(linearClient);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid teamId: '${teamId}'. Team not found.${availableTeamsMessage}`
+							`Invalid teamId: '${teamId}'. Team not found. Valid teams are: ${availableTeamsJsonString}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+					const availableTeamsJsonString = await getAvailableTeamsJson(linearClient);
 					let specificMessage = `Invalid teamId: '${teamId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -104,7 +136,7 @@ export const listProjectsTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableTeamsMessage}`
+						`${specificMessage} Valid teams are: ${availableTeamsJsonString}`
 					);
 				}
 			}
@@ -227,10 +259,22 @@ export const getProjectTool = defineTool({
 				`Failed to get project: ${err.message || "Unknown error"}`,
 			);
 		}
-		throw new McpError(
-			ErrorCode.MethodNotFound,
-			`Project with ID or name "${query}" not found`,
-		);
+		// If project not found by ID or name, fetch all projects and include in error message
+		try {
+			const allProjects = await linearClient.projects();
+			const validProjects = allProjects.nodes.map(p => ({ id: p.id, name: p.name }));
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`Project with query "${query}" not found. Valid projects are: ${JSON.stringify(validProjects, null, 2)}`,
+			);
+		} catch (listError: unknown) {
+			const err = listError as { message?: string };
+			// If listing projects also fails, throw a generic not found error
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`Project with query "${query}" not found. Also failed to list available projects: ${err.message || "Unknown error"}`,
+			);
+		}
 	},
 });
 
@@ -303,15 +347,15 @@ export const updateProjectTool = defineTool({
 			try {
 				const projectToUpdate = await linearClient.project(id);
 				if (!projectToUpdate) {
-					const availableProjectsMessage = await getAvailableProjectsMessage(linearClient);
+					const availableProjectsJsonString = await getAvailableProjectsJson(linearClient);
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`Invalid project id: '${id}'. Project not found.${availableProjectsMessage}`
+						`Invalid project id: '${id}'. Project not found. Valid projects are: ${availableProjectsJsonString}`
 					);
 				}
 			} catch (error: unknown) {
 				const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-				const availableProjectsMessage = await getAvailableProjectsMessage(linearClient);
+				const availableProjectsJsonString = await getAvailableProjectsJson(linearClient);
 				let specificMessage = `Invalid project id: '${id}'.`;
 				if (err.extensions?.userPresentableMessage) {
 					specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -326,7 +370,7 @@ export const updateProjectTool = defineTool({
 				}
 				throw new McpError(
 					ErrorCode.InvalidParams,
-					`${specificMessage}${availableProjectsMessage}`
+					`${specificMessage} Valid projects are: ${availableProjectsJsonString}`
 				);
 			}
 
@@ -337,10 +381,10 @@ export const updateProjectTool = defineTool({
 				const invalidTeamIds = teamIds.filter(teamId => !validTeamIds.includes(teamId));
 
 				if (invalidTeamIds.length > 0) {
-					const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+					const availableTeamsJsonString = await getAvailableTeamsJson(linearClient);
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`Invalid teamId(s): '${invalidTeamIds.join(", ")}'. Team(s) not found.${availableTeamsMessage}`
+						`Invalid teamId(s): '${invalidTeamIds.join(", ")}'. Team(s) not found. Valid teams are: ${availableTeamsJsonString}`
 					);
 				}
 			}

@@ -105,17 +105,17 @@ export const getTeamTool = defineTool({
 		// If team not found by ID, name, or key, fetch all teams and include in error message
 		try {
 			const allTeams = await linearClient.teams();
-			const teamList = allTeams.nodes.map(team => `${team.name} (${team.key})`).join(', ');
+			const validTeams = allTeams.nodes.map(team => ({ id: team.id, name: team.name }));
 			throw new McpError(
-				ErrorCode.MethodNotFound,
-				`Team with ID or name "${query}" not found. Available teams: ${teamList}`,
+				ErrorCode.InvalidParams,
+				`Team with query "${query}" not found. Valid teams are: ${JSON.stringify(validTeams, null, 2)}`,
 			);
 		} catch (listError: unknown) {
 			const err = listError as { message?: string };
 			// If listing teams also fails, throw a generic not found error
 			throw new McpError(
-				ErrorCode.MethodNotFound,
-				`Team with ID or name "${query}" not found. Failed to list available teams: ${err.message || "Unknown error"}`,
+				ErrorCode.InvalidParams,
+				`Team with query "${query}" not found. Also failed to list available teams: ${err.message || "Unknown error"}`,
 			);
 		}
 	},

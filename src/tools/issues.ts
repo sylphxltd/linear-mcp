@@ -21,141 +21,129 @@ import {
 	defineTool,
 } from "../schemas/index.js";
 import { getLinearClient } from "../utils/linear-client.js";
-async function getAvailableTeamsMessage(linearClient: LinearClient): Promise<string> {
+
+async function getAvailableTeamsJson(linearClient: LinearClient): Promise<string> {
   try {
     const teams = await linearClient.teams();
     if (!teams.nodes || teams.nodes.length === 0) {
-      return " No teams available to list."; // Leading space for concat
+      return "[]";
     }
-    const teamList = teams.nodes
-      .map((team) => `  - ${team.id}: ${team.name}`)
-      .join("\n");
-    return `\nAvailable teams:\n${teamList}`;
+    const teamList = teams.nodes.map((team) => ({ id: team.id, name: team.name, key: team.key }));
+    return JSON.stringify(teamList, null, 2);
   } catch (e) {
-    console.error("Failed to fetch available teams for error message:", e);
-    return "\n(Could not fetch available teams due to an internal error.)";
+    const error = e as Error;
+    console.error("Failed to fetch available teams for error message (JSON):", error.message);
+    return `"(Could not fetch available teams as JSON: ${error.message})"`;
   }
 }
-async function getAvailableProjectsMessage(linearClient: LinearClient): Promise<string> {
+async function getAvailableProjectsJson(linearClient: LinearClient): Promise<string> {
   try {
-    const projects = await linearClient.projects(); // Assuming no complex filtering needed for listing
+    const projects = await linearClient.projects();
     if (!projects.nodes || projects.nodes.length === 0) {
-      return " No projects available to list."; // Leading space for concat
+      return "[]";
     }
-    const projectList = projects.nodes
-      .map((project) => `  - ${project.id}: ${project.name}`)
-      .join("\n");
-    return `\nAvailable projects:\n${projectList}`;
+    const projectList = projects.nodes.map((project) => ({ id: project.id, name: project.name }));
+    return JSON.stringify(projectList, null, 2);
   } catch (e) {
-    console.error("Failed to fetch available projects for error message:", e);
-    return "\n(Could not fetch available projects due to an internal error.)";
+    const error = e as Error;
+    console.error("Failed to fetch available projects for error message (JSON):", error.message);
+    return `"(Could not fetch available projects as JSON: ${error.message})"`;
   }
 }
-async function getAvailableStatesMessage(linearClient: LinearClient, teamId: string): Promise<string> {
+async function getAvailableStatesJson(linearClient: LinearClient, teamId: string): Promise<string> {
   if (!teamId) {
-    return "\n(Cannot fetch states without a valid teamId)";
+    return `"(Cannot fetch states without a valid teamId. Please provide a teamId.)"`;
   }
   try {
     const team = await linearClient.team(teamId);
     if (!team) {
-      // This case should ideally be caught by teamId validation first,
-      // but as a safeguard for this specific helper:
-      return `\n(Could not fetch states: Team with ID '${teamId}' not found.)`;
+      const availableTeams = await getAvailableTeamsJson(linearClient);
+      return `"(Could not fetch states: Team with ID '${teamId}' not found. Valid teams are: ${availableTeams})"`;
     }
     const states = await team.states();
     if (!states.nodes || states.nodes.length === 0) {
-      return ` No states available for team '${team.name}' (${teamId}).`; // Leading space
+      return "[]";
     }
-    const stateList = states.nodes
-      .map((state) => `  - ${state.id}: ${state.name} (Type: ${state.type})`)
-      .join("\n");
-    return `\nAvailable states for team '${team.name}' (${teamId}):\n${stateList}`;
+    const stateList = states.nodes.map((state) => ({ id: state.id, name: state.name, type: state.type }));
+    return JSON.stringify(stateList, null, 2);
   } catch (e) {
-    console.error(`Failed to fetch available states for team ${teamId} for error message:`, e);
-    return `\n(Could not fetch available states for team ${teamId} due to an internal error.)`;
+    const error = e as Error;
+    console.error(`Failed to fetch available states for team ${teamId} for error message (JSON):`, error.message);
+    return `"(Could not fetch available states for team ${teamId} as JSON: ${error.message})"`;
   }
 }
-async function getAvailableAssigneesMessage(linearClient: LinearClient): Promise<string> {
+async function getAvailableAssigneesJson(linearClient: LinearClient): Promise<string> {
   try {
     const users = await linearClient.users();
     if (!users.nodes || users.nodes.length === 0) {
-      return " No users available to list as assignees."; // Leading space
+      return "[]";
     }
     const userList = users.nodes
-      .filter(user => user.active) // Typically, only active users can be assignees
-      .map((user) => `  - ${user.id}: ${user.displayName} (${user.email})`)
-      .join("\n");
+      .filter(user => user.active)
+      .map((user) => ({ id: user.id, name: user.displayName, email: user.email }));
     if (userList.length === 0) {
-      return " No active users available to list as assignees.";
+        return "[]"; // No active users
     }
-    return `\nAvailable assignees (active users):\n${userList}`;
+    return JSON.stringify(userList, null, 2);
   } catch (e) {
-    console.error("Failed to fetch available assignees for error message:", e);
-    return "\n(Could not fetch available assignees due to an internal error.)";
+    const error = e as Error;
+    console.error("Failed to fetch available assignees for error message (JSON):", error.message);
+    return `"(Could not fetch available assignees as JSON: ${error.message})"`;
   }
 }
-async function getAvailableLabelsMessage(linearClient: LinearClient, teamId: string): Promise<string> {
+async function getAvailableLabelsJson(linearClient: LinearClient, teamId: string): Promise<string> {
   if (!teamId) {
-    return "\n(Cannot fetch labels without a valid teamId)";
+    return `"(Cannot fetch labels without a valid teamId. Please provide a teamId.)"`;
   }
   try {
     const team = await linearClient.team(teamId);
     if (!team) {
-      return `\n(Could not fetch labels: Team with ID '${teamId}' not found.)`;
+      const availableTeams = await getAvailableTeamsJson(linearClient);
+      return `"(Could not fetch labels: Team with ID '${teamId}' not found. Valid teams are: ${availableTeams})"`;
     }
     const labels = await team.labels();
     if (!labels.nodes || labels.nodes.length === 0) {
-      return ` No labels available for team '${team.name}' (${teamId}).`; // Leading space
+      return "[]";
     }
-    const labelList = labels.nodes
-      .map((label) => `  - ${label.id}: ${label.name}`)
-      .join("\n");
-    return `\nAvailable labels for team '${team.name}' (${teamId}):\n${labelList}`;
+    const labelList = labels.nodes.map((label) => ({ id: label.id, name: label.name, color: label.color }));
+    return JSON.stringify(labelList, null, 2);
   } catch (e) {
-    console.error(`Failed to fetch available labels for team ${teamId} for error message:`, e);
-    return `\n(Could not fetch available labels for team ${teamId} due to an internal error.)`;
+    const error = e as Error;
+    console.error(`Failed to fetch available labels for team ${teamId} for error message (JSON):`, error.message);
+    return `"(Could not fetch available labels for team ${teamId} as JSON: ${error.message})"`;
   }
 }
-async function getAvailableProjectMilestonesMessage(linearClient: LinearClient, projectId?: string): Promise<string> {
+async function getAvailableProjectMilestonesJson(linearClient: LinearClient, projectId?: string): Promise<string> {
   try {
-    // If a specific projectId is provided, try to list milestones for that project.
-    // Otherwise, list milestones for all projects (might be a large list).
     let milestones: Awaited<ReturnType<LinearClient['projectMilestones']>>;
     let project: Project | undefined;
-    if (projectId && projectId !== "any") {
+
+    if (projectId && projectId !== "any" && projectId.trim() !== "") {
        project = await linearClient.project(projectId);
        if (!project) {
-         return `\n(Could not fetch milestones: Project with ID '${projectId}' not found.)`;
+         const availableProjects = await getAvailableProjectsJson(linearClient);
+         return `"(Could not fetch milestones: Project with ID '${projectId}' not found. Valid projects are: ${availableProjects})"`;
        }
-       // Assuming project.projectMilestones() exists and works
        milestones = await project.projectMilestones();
     } else {
-      // Fallback to listing all milestones if no specific project or "any" is requested
-      // Note: Linear API might not have a direct way to list ALL milestones across projects easily.
-      // We'll list projects and then their milestones, which can be inefficient.
-      // A more efficient approach might require a different API query or a dedicated tool.
-      // For now, we'll list projects and indicate that milestones are project-specific.
-      const projects = await linearClient.projects();
-      if (!projects.nodes || projects.nodes.length === 0) {
-        return "\n(Could not fetch milestones: No projects available to list.)";
-      }
-      const projectList = projects.nodes
-        .map((p) => `  - ${p.id}: ${p.name}`)
-        .join("\n");
-      return `\nProject milestones are associated with specific projects. Please provide a valid projectId to list its milestones.\nAvailable projects:\n${projectList}`;
+      const allProjects = await linearClient.projects();
+      const projectList = allProjects.nodes.map(p => ({id: p.id, name: p.name}));
+      return `"(Project milestones are specific to a project. Please provide a valid projectId. Available projects: ${JSON.stringify(projectList, null, 2)})"`;
     }
-
 
     if (!milestones || !milestones.nodes || milestones.nodes.length === 0) {
-      return ` No milestones available for project '${project?.name}' (${projectId}).`; // Leading space
+      return "[]";
     }
-    const milestoneList = milestones.nodes
-      .map((milestone) => `  - ${milestone.id}: ${milestone.name}`)
-      .join("\n");
-    return `\nAvailable milestones for project '${project?.name}' (${projectId}):\n${milestoneList}`;
+    const milestoneList = milestones.nodes.map((milestone) => ({ id: milestone.id, name: milestone.name }));
+    return JSON.stringify(milestoneList, null, 2);
   } catch (e) {
-    console.error(`Failed to fetch available project milestones for project ${projectId} for error message:`, e);
-    return `\n(Could not fetch available project milestones for project ${projectId} due to an internal error.)`;
+    const error = e as Error;
+    console.error(`Failed to fetch available project milestones for project ${projectId} for error message (JSON):`, error.message);
+    if (projectId && projectId !== "any" && error.message.toLowerCase().includes("not found")) {
+        const availableProjects = await getAvailableProjectsJson(linearClient);
+        return `"(Could not fetch milestones for project '${projectId}': ${error.message}. Valid projects are: ${availableProjects})"`;
+    }
+    return `"(Could not fetch available project milestones for project ${projectId} as JSON: ${error.message})"`;
   }
 }
 
@@ -179,34 +167,30 @@ export const listIssuesTool = defineTool({
 				teamId,
 				stateId,
 				assigneeId,
-				projectMilestoneId, // Added
+				projectMilestoneId,
 				includeArchived = true,
 				limit = 50,
 			} = args;
 
 			const linearClient = getLinearClient();
 
-			// Validate teamId if provided
 			if (teamId) {
 				try {
-					const team = await linearClient.team(teamId); // Attempt to fetch the team
-					if (!team) { // If team is null or undefined, it's not found
-						const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+					const team = await linearClient.team(teamId);
+					if (!team) {
+						const availableTeamsJson = await getAvailableTeamsJson(linearClient);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid teamId: '${teamId}'. Team not found.${availableTeamsMessage}`
+							`Invalid teamId: '${teamId}'. Team not found. Valid teams are: ${availableTeamsJson}`
 						);
 					}
 				} catch (error: unknown) {
-					// This catch block handles errors from linearClient.team() itself,
-					// e.g., if the ID format is invalid or network issues occur during validation.
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+					const availableTeamsJson = await getAvailableTeamsJson(linearClient);
 					let specificMessage = `Invalid teamId: '${teamId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
 					} else if (err.message) {
-						// Check if the SDK error message indicates "not found" or a generic API error for invalid ID
 						if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
 							 specificMessage = `${specificMessage} Team not found or ID is invalid.`;
 						} else {
@@ -217,31 +201,29 @@ export const listIssuesTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableTeamsMessage}`
+						`${specificMessage} Valid teams are: ${availableTeamsJson}`
 					);
 				}
 			}
 
-			// Validate stateId if provided
-			if (stateId && teamId) { // stateId validation depends on a valid teamId
+			if (stateId && teamId) {
 				try {
-					const team = await linearClient.team(teamId); // Re-fetch or assume teamId is validated
+					const team = await linearClient.team(teamId);
 					if (!team) {
-						// This should have been caught by teamId validation, but as a safeguard
-						const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
-						throw new McpError(ErrorCode.InvalidParams, `Cannot validate stateId: Team '${teamId}' not found.${availableTeamsMessage}`);
+						const availableTeamsJson = await getAvailableTeamsJson(linearClient);
+						throw new McpError(ErrorCode.InvalidParams, `Cannot validate stateId: Team '${teamId}' not found. Valid teams are: ${availableTeamsJson}`);
 					}
 					const states = await team.states({ filter: { id: { eq: stateId } } });
 					if (!states.nodes || states.nodes.length === 0) {
-						const availableStatesMessage = await getAvailableStatesMessage(linearClient, teamId);
+						const availableStatesJson = await getAvailableStatesJson(linearClient, teamId);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid stateId: '${stateId}' for team '${team.name}' (${teamId}). State not found.${availableStatesMessage}`
+							`Invalid stateId: '${stateId}' for team '${team.name}' (${teamId}). State not found. Valid states for this team are: ${availableStatesJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableStatesMessage = await getAvailableStatesMessage(linearClient, teamId);
+					const availableStatesJson = await getAvailableStatesJson(linearClient, teamId);
 					let specificMessage = `Invalid stateId: '${stateId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -256,20 +238,19 @@ export const listIssuesTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableStatesMessage}`
+						`${specificMessage} Valid states for this team are: ${availableStatesJson}`
 					);
 				}
 			} else if (stateId && !teamId) {
-				const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
-				throw new McpError(ErrorCode.InvalidParams, `Cannot validate stateId: 'teamId' is required when 'stateId' is provided.${availableTeamsMessage}`);
+				const availableTeamsJson = await getAvailableTeamsJson(linearClient);
+				throw new McpError(ErrorCode.InvalidParams, `Cannot validate stateId: 'teamId' is required when 'stateId' is provided. Valid teams are: ${availableTeamsJson}`);
 			}
 
-			// Validate assigneeId if provided
 			if (assigneeId) {
 				try {
-					const assignee = await linearClient.user(assigneeId); // Attempt to fetch the user
-					if (!assignee || !assignee.active) { // Ensure user exists and is active
-						const availableAssigneesMessage = await getAvailableAssigneesMessage(linearClient);
+					const assignee = await linearClient.user(assigneeId);
+					if (!assignee || !assignee.active) {
+						const availableAssigneesJson = await getAvailableAssigneesJson(linearClient);
 						let message = `Invalid assigneeId: '${assigneeId}'.`;
 						if (!assignee) {
 							message += " User not found.";
@@ -278,12 +259,12 @@ export const listIssuesTool = defineTool({
 						}
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`${message}${availableAssigneesMessage}`
+							`${message} Valid assignees are: ${availableAssigneesJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableAssigneesMessage = await getAvailableAssigneesMessage(linearClient);
+					const availableAssigneesJson = await getAvailableAssigneesJson(linearClient);
 					let specificMessage = `Invalid assigneeId: '${assigneeId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -298,34 +279,27 @@ export const listIssuesTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableAssigneesMessage}`
+						`${specificMessage} Valid assignees are: ${availableAssigneesJson}`
 					);
 				}
 			}
 
-			// Validate projectMilestoneId if provided
 			if (projectMilestoneId) {
 				try {
-					const projectMilestone = await linearClient.projectMilestone(projectMilestoneId); // Attempt to fetch the project milestone
-					if (!projectMilestone) { // If not found
-						// We need the project ID to list available milestones.
-						// Since projectMilestoneId is provided, we can try to get the associated project.
-						// However, the API might not directly support getting the project from a milestone ID easily here.
-						// A simpler approach is to just list all available project milestones if the provided one is invalid.
-						// This might return a large list, but it fulfills the requirement of providing available IDs.
-						const availableMilestonesMessage = await getAvailableProjectMilestonesMessage(linearClient, "any"); // Pass "any" or similar if no specific project context
+					const projectMilestone = await linearClient.projectMilestone(projectMilestoneId);
+					if (!projectMilestone) {
+						const availableMilestonesJson = await getAvailableProjectMilestonesJson(linearClient);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid projectMilestoneId: '${projectMilestoneId}'. Project milestone not found.${availableMilestonesMessage}`
+							`Invalid projectMilestoneId: '${projectMilestoneId}'. Project milestone not found. ${availableMilestonesJson}`
 						);
 					}
 				} catch (error: unknown) {
-					// Handle cases where the error is already an McpError (e.g. from getAvailableProjectMilestonesMessage)
 					if (error instanceof McpError) {
 						throw error;
 					}
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableMilestonesMessage = await getAvailableProjectMilestonesMessage(linearClient, "any"); // Pass "any" or similar
+					const availableMilestonesJson = await getAvailableProjectMilestonesJson(linearClient);
 					let specificMessage = `Invalid projectMilestoneId: '${projectMilestoneId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -340,7 +314,7 @@ export const listIssuesTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableMilestonesMessage}`
+						`${specificMessage} ${availableMilestonesJson}`
 					);
 				}
 			}
@@ -348,18 +322,18 @@ export const listIssuesTool = defineTool({
 			const filters: IssueFilters = {};
 			if (query) {
 				filters.filter = {
-					...(filters.filter || {}), // Preserve existing filters if any
+					...(filters.filter || {}),
 					or: [
 						{ title: { containsIgnoreCase: query } },
 						{ description: { containsIgnoreCase: query } },
 					],
 				};
 			}
-			if (teamId) filters.teamId = teamId; // This might be part of the main filter object
-			if (stateId) { // This might be part of the main filter object
+			if (teamId) filters.teamId = teamId;
+			if (stateId) {
 				filters.filter = { ...(filters.filter || {}), state: { id: { eq: stateId } } };
 			}
-			if (assigneeId) { // This might be part of the main filter object
+			if (assigneeId) {
 				filters.filter = { ...(filters.filter || {}), assignee: { id: { eq: assigneeId } } };
 			}
 			if (projectMilestoneId) {
@@ -414,6 +388,7 @@ export const listIssuesTool = defineTool({
 				],
 			};
 		} catch (error: unknown) {
+      if (error instanceof McpError) throw error;
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,
@@ -433,9 +408,20 @@ export const getIssueTool = defineTool({
 			const linearClient = getLinearClient();
 			const issue: Issue | undefined = await linearClient.issue(id);
 			if (!issue) {
+				let recentIssuesMessage = "";
+				try {
+					// biome-ignore lint/suspicious/noExplicitAny: SDK's PaginationOrderBy type is restrictive; "updatedAt" is expected at runtime.
+					const recentIssues = await linearClient.issues({ first: 10, orderBy: "updatedAt" as any });
+					if (recentIssues.nodes.length > 0) {
+						const issueList = recentIssues.nodes.map(iss => ({ id: iss.id, title: iss.title, identifier: iss.identifier }));
+						recentIssuesMessage = ` Recent issues include: ${JSON.stringify(issueList, null, 2)}`;
+					}
+				} catch (listError) {
+					recentIssuesMessage = " (Could not fetch recent issues for context.)";
+				}
 				throw new McpError(
-					ErrorCode.MethodNotFound,
-					`Issue with ID ${id} not found`,
+					ErrorCode.InvalidParams,
+					`Issue with ID '${id}' not found.${recentIssuesMessage}`
 				);
 			}
 			const attachments = await issue.attachments();
@@ -498,6 +484,11 @@ export const getIssueTool = defineTool({
 								id: attachment.id,
 								title: attachment.title,
 								url: attachment.url,
+								source: attachment.source,
+								metadata: attachment.metadata,
+								groupBySource: attachment.groupBySource,
+								createdAt: attachment.createdAt,
+								updatedAt: attachment.updatedAt,
 							})),
 							createdAt: issue.createdAt,
 							updatedAt: issue.updatedAt,
@@ -507,6 +498,7 @@ export const getIssueTool = defineTool({
 				],
 			};
 		} catch (error: unknown) {
+      if (error instanceof McpError) throw error;
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,
@@ -528,49 +520,31 @@ export const createIssueTool = defineTool({
 				teamId,
 				priority,
 				projectId,
-				projectMilestoneId, // Added
 				stateId,
 				assigneeId,
 				labelIds,
 				dueDate,
+				projectMilestoneId,
 			} = args;
-			const issueCreateInput: Parameters<
-				typeof LinearClient.prototype.createIssue
-			>[0] = {
-				title,
-				description,
-				teamId,
-			};
-			if (priority !== undefined) issueCreateInput.priority = priority;
-			if (projectId) issueCreateInput.projectId = projectId;
-			if (projectMilestoneId) issueCreateInput.projectMilestoneId = projectMilestoneId; // Added
-			if (stateId) issueCreateInput.stateId = stateId;
-			if (assigneeId) issueCreateInput.assigneeId = assigneeId;
-			if (labelIds) issueCreateInput.labelIds = labelIds;
-			if (dueDate) issueCreateInput.dueDate = dueDate;
 			const linearClient = getLinearClient();
 
-			// Validate teamId if provided
 			if (teamId) {
 				try {
-					const team = await linearClient.team(teamId); // Attempt to fetch the team
-					if (!team) { // If team is null or undefined, it's not found
-						const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+					const team = await linearClient.team(teamId);
+					if (!team) {
+						const availableTeamsJson = await getAvailableTeamsJson(linearClient);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid teamId: '${teamId}'. Team not found.${availableTeamsMessage}`
+							`Invalid teamId: '${teamId}'. Team not found. Valid teams are: ${availableTeamsJson}`
 						);
 					}
 				} catch (error: unknown) {
-					// This catch block handles errors from linearClient.team() itself,
-					// e.g., if the ID format is invalid or network issues occur during validation.
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+					const availableTeamsJson = await getAvailableTeamsJson(linearClient);
 					let specificMessage = `Invalid teamId: '${teamId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
 					} else if (err.message) {
-						// Check if the SDK error message indicates "not found" or a generic API error for invalid ID
 						if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
 							 specificMessage = `${specificMessage} Team not found or ID is invalid.`;
 						} else {
@@ -581,31 +555,33 @@ export const createIssueTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableTeamsMessage}`
+						`${specificMessage} Valid teams are: ${availableTeamsJson}`
 					);
 				}
-			}
+			} else {
+        throw new McpError(ErrorCode.InvalidParams, "teamId is required to create an issue.");
+      }
 
-			// Validate projectId if provided
+
 			if (projectId) {
 				try {
-					const project = await linearClient.project(projectId); // Attempt to fetch the project
-					if (!project) { // If project is null or undefined, it's not found
-						const availableProjectsMessage = await getAvailableProjectsMessage(linearClient);
+					const project = await linearClient.project(projectId);
+					if (!project) {
+						const availableProjectsJson = await getAvailableProjectsJson(linearClient);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid projectId: '${projectId}'. Project not found.${availableProjectsMessage}`
+							`Invalid projectId: '${projectId}'. Project not found. Valid projects are: ${availableProjectsJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableProjectsMessage = await getAvailableProjectsMessage(linearClient);
+					const availableProjectsJson = await getAvailableProjectsJson(linearClient);
 					let specificMessage = `Invalid projectId: '${projectId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
 					} else if (err.message) {
 						if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
-							specificMessage = `${specificMessage} Project not found or ID is invalid.`;
+							 specificMessage = `${specificMessage} Project not found or ID is invalid.`;
 						} else {
 							specificMessage = `${specificMessage} Error during validation: ${err.message}`;
 						}
@@ -614,31 +590,26 @@ export const createIssueTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableProjectsMessage}`
+						`${specificMessage} Valid projects are: ${availableProjectsJson}`
 					);
 				}
 			}
 
-			// Validate stateId if provided
-			if (stateId && teamId) { // stateId validation depends on a valid teamId
+			if (stateId && teamId) {
 				try {
-					const team = await linearClient.team(teamId); // Re-fetch or assume teamId is validated
-					if (!team) {
-						// This should have been caught by teamId validation, but as a safeguard
-						const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
-						throw new McpError(ErrorCode.InvalidParams, `Cannot validate stateId: Team '${teamId}' not found.${availableTeamsMessage}`);
-					}
+					const team = await linearClient.team(teamId);
+					if (!team) { throw new McpError(ErrorCode.InternalError, "Team validation failed unexpectedly.");}
 					const states = await team.states({ filter: { id: { eq: stateId } } });
 					if (!states.nodes || states.nodes.length === 0) {
-						const availableStatesMessage = await getAvailableStatesMessage(linearClient, teamId);
+						const availableStatesJson = await getAvailableStatesJson(linearClient, teamId);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid stateId: '${stateId}' for team '${team.name}' (${teamId}). State not found.${availableStatesMessage}`
+							`Invalid stateId: '${stateId}' for team '${team.name}' (${teamId}). State not found. Valid states for this team are: ${availableStatesJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableStatesMessage = await getAvailableStatesMessage(linearClient, teamId);
+					const availableStatesJson = await getAvailableStatesJson(linearClient, teamId);
 					let specificMessage = `Invalid stateId: '${stateId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -653,34 +624,32 @@ export const createIssueTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableStatesMessage}`
+						`${specificMessage} Valid states for this team are: ${availableStatesJson}`
 					);
 				}
 			} else if (stateId && !teamId) {
-				const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
-				throw new McpError(ErrorCode.InvalidParams, `Cannot validate stateId: 'teamId' is required when 'stateId' is provided.${availableTeamsMessage}`);
+				 throw new McpError(ErrorCode.InvalidParams, "teamId is required when stateId is provided.");
 			}
 
-			// Validate assigneeId if provided
 			if (assigneeId) {
 				try {
-					const assignee = await linearClient.user(assigneeId); // Attempt to fetch the user
-					if (!assignee || !assignee.active) { // Ensure user exists and is active
-						const availableAssigneesMessage = await getAvailableAssigneesMessage(linearClient);
-						let message = `Invalid assigneeId: '${assigneeId}'.`;
+					const assignee = await linearClient.user(assigneeId);
+					if (!assignee || !assignee.active) {
+						const availableAssigneesJson = await getAvailableAssigneesJson(linearClient);
+						let messageText = `Invalid assigneeId: '${assigneeId}'.`;
 						if (!assignee) {
-							message += " User not found.";
+							messageText += " User not found.";
 						} else if (!assignee.active) {
-							message += ` User '${assignee.displayName}' (${assigneeId}) is not active.`;
+							messageText += ` User '${assignee.displayName}' (${assigneeId}) is not active.`;
 						}
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`${message}${availableAssigneesMessage}`
+							`${messageText} Valid assignees are: ${availableAssigneesJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableAssigneesMessage = await getAvailableAssigneesMessage(linearClient);
+					const availableAssigneesJson = await getAvailableAssigneesJson(linearClient);
 					let specificMessage = `Invalid assigneeId: '${assigneeId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -695,71 +664,125 @@ export const createIssueTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableAssigneesMessage}`
+						`${specificMessage} Valid assignees are: ${availableAssigneesJson}`
 					);
 				}
 			}
 
-			// Validate labelIds if provided
-			if (labelIds && labelIds.length > 0 && teamId) { // labelIds validation depends on a valid teamId
+			if (labelIds && labelIds.length > 0 && teamId) {
 				try {
-					const team = await linearClient.team(teamId); // Re-fetch or assume teamId is validated
-					if (!team) {
-						const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
-						throw new McpError(ErrorCode.InvalidParams, `Cannot validate labelIds: Team '${teamId}' not found.${availableTeamsMessage}`);
-					}
-					const teamLabels = await team.labels();
-					const validLabelIds = teamLabels.nodes.map(label => label.id);
-					const invalidLabelIds = labelIds.filter(labelId => !validLabelIds.includes(labelId));
-
+					const team = await linearClient.team(teamId);
+					if (!team) { throw new McpError(ErrorCode.InternalError, "Team validation failed unexpectedly for labels.");}
+					const teamLabels = await team.labels({ filter: { id: { in: labelIds } } });
+					const foundLabelIds = teamLabels.nodes.map(label => label.id);
+					const invalidLabelIds = labelIds.filter(labelId => !foundLabelIds.includes(labelId));
 					if (invalidLabelIds.length > 0) {
-						const availableLabelsMessage = await getAvailableLabelsMessage(linearClient, teamId);
+						const availableLabelsJson = await getAvailableLabelsJson(linearClient, teamId);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid labelId(s): '${invalidLabelIds.join(", ")}' for team '${team.name}' (${teamId}). Labels not found.${availableLabelsMessage}`
+							`Invalid labelId(s): '${invalidLabelIds.join(", ")}' for team '${team.name}' (${teamId}). Label(s) not found. Valid labels for this team are: ${availableLabelsJson}`
 						);
 					}
 				} catch (error: unknown) {
-					// Handle cases where the error is already an McpError (e.g. from getAvailableLabelsMessage if team not found)
-					if (error instanceof McpError) {
-						throw error;
-					}
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableLabelsMessage = await getAvailableLabelsMessage(linearClient, teamId);
-					let specificMessage = `Error validating labelId(s) for team '${teamId}'.`;
+					const availableLabelsJson = await getAvailableLabelsJson(linearClient, teamId);
+					let specificMessage = `Invalid labelId(s) provided for team '${teamId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
 					} else if (err.message) {
-						specificMessage = `${specificMessage} Error: ${err.message}`;
+						if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
+							specificMessage = `${specificMessage} One or more labels not found or IDs are invalid for team '${teamId}'.`;
+						} else {
+							specificMessage = `${specificMessage} Error during validation: ${err.message}`;
+						}
 					} else {
-						specificMessage = `${specificMessage} An unknown error occurred during label validation.`;
+						specificMessage = `${specificMessage} An unknown error occurred during label validation for team '${teamId}'.`;
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableLabelsMessage}`
+						`${specificMessage} Valid labels for this team are: ${availableLabelsJson}`
 					);
 				}
 			} else if (labelIds && labelIds.length > 0 && !teamId) {
-				const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
-				throw new McpError(ErrorCode.InvalidParams, `Cannot validate labelIds: 'teamId' is required when 'labelIds' are provided.${availableTeamsMessage}`);
+				 throw new McpError(ErrorCode.InvalidParams, "teamId is required when labelIds are provided.");
 			}
 
-			const issuePayload = await linearClient.createIssue(issueCreateInput);
-			if (issuePayload.issue) {
-				const createdIssue = await issuePayload.issue;
-				const projectMilestoneEntity = await createdIssue.projectMilestone;
+			if (projectMilestoneId) {
+				try {
+					const projectMilestone = await linearClient.projectMilestone(projectMilestoneId);
+					if (!projectMilestone) {
+						const availableMilestonesJson = await getAvailableProjectMilestonesJson(linearClient, projectId);
+						throw new McpError(
+							ErrorCode.InvalidParams,
+							`Invalid projectMilestoneId: '${projectMilestoneId}'. Project milestone not found. ${availableMilestonesJson}`
+						);
+					}
+					if (projectId && projectMilestone.projectId !== projectId) {
+						const projectForMilestone = await linearClient.project(projectId);
+						const milestoneProject = await projectMilestone.project;
+						const availableMilestonesForGivenProjectJson = await getAvailableProjectMilestonesJson(linearClient, projectId);
+						throw new McpError(
+							ErrorCode.InvalidParams,
+							`Project milestone '${projectMilestone.name}' (${projectMilestoneId}) does not belong to project '${projectForMilestone?.name}' (${projectId}). It belongs to '${milestoneProject?.name}' (${milestoneProject?.id}). Valid milestones for project '${projectForMilestone?.name}' are: ${availableMilestonesForGivenProjectJson}`
+						);
+					}
+				} catch (error: unknown) {
+					if (error instanceof McpError) throw error;
+					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
+					const availableMilestonesJson = await getAvailableProjectMilestonesJson(linearClient, projectId);
+					let specificMessage = `Invalid projectMilestoneId: '${projectMilestoneId}'.`;
+					if (err.extensions?.userPresentableMessage) {
+						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
+					} else if (err.message) {
+						if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
+							specificMessage = `${specificMessage} Project milestone not found or ID is invalid.`;
+						} else {
+							specificMessage = `${specificMessage} Error during validation: ${err.message}`;
+						}
+					} else {
+						specificMessage = `${specificMessage} An unknown error occurred during project milestone validation.`;
+					}
+					throw new McpError(
+						ErrorCode.InvalidParams,
+						`${specificMessage} ${availableMilestonesJson}`
+					);
+				}
+			}
+
+			const issuePayload: IssuePayload = await linearClient.createIssue({
+				title,
+				description,
+				teamId,
+				priority,
+				projectId,
+				stateId,
+				assigneeId,
+				labelIds,
+				dueDate,
+				projectMilestoneId,
+			});
+
+			if (issuePayload.success && issuePayload.issue) {
+				const issueEntity = await issuePayload.issue;
+				const stateEntity = await issueEntity.state;
+				const assigneeEntity = await issueEntity.assignee;
+				const projectMilestoneEntity = await issueEntity.projectMilestone;
 				return {
 					content: [
 						{
 							type: "text",
 							text: JSON.stringify({
-								id: createdIssue.id,
-								identifier: createdIssue.identifier,
-								title: createdIssue.title,
-								url: createdIssue.url,
-								projectMilestone: projectMilestoneEntity
-									? { id: projectMilestoneEntity.id, name: projectMilestoneEntity.name }
-									: null,
+								id: issueEntity.id,
+								identifier: issueEntity.identifier,
+								title: issueEntity.title,
+								description: issueEntity.description,
+								priority: issueEntity.priority,
+								state: stateEntity ? { id: stateEntity.id, name: stateEntity.name, color: stateEntity.color, type: stateEntity.type } : null,
+								assignee: assigneeEntity ? { id: assigneeEntity.id, name: assigneeEntity.name, email: assigneeEntity.email } : null,
+								projectMilestone: projectMilestoneEntity ? { id: projectMilestoneEntity.id, name: projectMilestoneEntity.name } : null,
+								createdAt: issueEntity.createdAt,
+								updatedAt: issueEntity.updatedAt,
+								url: issueEntity.url,
 							}),
 						},
 					],
@@ -767,9 +790,12 @@ export const createIssueTool = defineTool({
 			}
 			throw new McpError(
 				ErrorCode.InternalError,
-				"Failed to create issue: No issue returned",
+				`Failed to create issue: ${issuePayload.lastSyncId ? `Sync ID ${issuePayload.lastSyncId}` : "No issue returned and no Sync ID"}`,
 			);
 		} catch (error: unknown) {
+			if (error instanceof McpError) {
+				throw error;
+			}
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,
@@ -791,52 +817,50 @@ export const updateIssueTool = defineTool({
 				description,
 				priority,
 				projectId,
-				projectMilestoneId, // Added
 				stateId,
 				assigneeId,
 				labelIds,
 				dueDate,
+				projectMilestoneId,
 			} = args;
-			const issueUpdateInput: Record<string, unknown | null> = {};
-			if (title !== undefined) issueUpdateInput.title = title;
-			if (description !== undefined) issueUpdateInput.description = description;
-			if (priority !== undefined) issueUpdateInput.priority = priority;
-			// For projectId, allow setting to null to remove it
-			if (projectId !== undefined) issueUpdateInput.projectId = projectId;
-
-
-			// For projectMilestoneId, allow setting to null to remove it
-			if (projectMilestoneId !== undefined) { // Check if the key exists in args
-				issueUpdateInput.projectMilestoneId = projectMilestoneId;
-			}
-
-			if (stateId !== undefined) issueUpdateInput.stateId = stateId;
-			if (assigneeId !== undefined) issueUpdateInput.assigneeId = assigneeId;
-			if (labelIds !== undefined) issueUpdateInput.labelIds = labelIds;
-			if (dueDate !== undefined) issueUpdateInput.dueDate = dueDate;
 			const linearClient = getLinearClient();
 
-			// Validate projectId if provided and not null
-			// If projectId is explicitly set to null, it means unassigning the project, which is a valid operation.
-			if (projectId) { // Only validate if projectId is truthy (not null or empty string)
+			const issueToUpdate = await linearClient.issue(id);
+			if (!issueToUpdate) {
+				let recentIssuesMessage = "";
+				try {
+					// biome-ignore lint/suspicious/noExplicitAny: SDK's PaginationOrderBy type is restrictive; "updatedAt" is expected at runtime.
+					const recentIssues = await linearClient.issues({ first: 10, orderBy: "updatedAt" as any });
+					if (recentIssues.nodes.length > 0) {
+						const issueList = recentIssues.nodes.map(iss => ({ id: iss.id, title: iss.title, identifier: iss.identifier }));
+						recentIssuesMessage = ` Recent issues include: ${JSON.stringify(issueList, null, 2)}`;
+					}
+				} catch (listError) {
+					recentIssuesMessage = " (Could not fetch recent issues for context.)";
+				}
+				throw new McpError(ErrorCode.InvalidParams, `Issue with ID '${id}' not found.${recentIssuesMessage}`);
+			}
+			const currentTeamId = (await issueToUpdate.team)?.id;
+
+			if (projectId) {
 				try {
 					const project = await linearClient.project(projectId);
 					if (!project) {
-						const availableProjectsMessage = await getAvailableProjectsMessage(linearClient);
+						const availableProjectsJson = await getAvailableProjectsJson(linearClient);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid projectId: '${projectId}'. Project not found.${availableProjectsMessage}`
+							`Invalid projectId: '${projectId}'. Project not found. Valid projects are: ${availableProjectsJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableProjectsMessage = await getAvailableProjectsMessage(linearClient);
+					const availableProjectsJson = await getAvailableProjectsJson(linearClient);
 					let specificMessage = `Invalid projectId: '${projectId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
 					} else if (err.message) {
 						if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
-							specificMessage = `${specificMessage} Project not found or ID is invalid.`;
+							 specificMessage = `${specificMessage} Project not found or ID is invalid.`;
 						} else {
 							specificMessage = `${specificMessage} Error during validation: ${err.message}`;
 						}
@@ -845,41 +869,31 @@ export const updateIssueTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableProjectsMessage}`
+						`${specificMessage} Valid projects are: ${availableProjectsJson}`
 					);
 				}
 			}
 
-			// Validate stateId if provided
 			if (stateId) {
-				// First, we need the teamId of the issue being updated.
-				const issueToUpdate = await linearClient.issue(id);
-				if (!issueToUpdate) {
-					throw new McpError(ErrorCode.MethodNotFound, `Cannot validate stateId: Issue with ID '${id}' not found.`);
+				if (!currentTeamId) {
+					throw new McpError(ErrorCode.InternalError, `Issue '${id}' does not have a team associated, cannot validate stateId. Please ensure the issue is associated with a team or provide a teamId if changing teams.`);
 				}
-				const issueTeam = await issueToUpdate.team;
-				if (!issueTeam) {
-					throw new McpError(ErrorCode.InternalError, `Cannot validate stateId: Issue '${id}' does not have an associated team.`);
-				}
-				const currentTeamId = issueTeam.id;
-
 				try {
-					const team = await linearClient.team(currentTeamId); // Ensure team exists
+					const team = await linearClient.team(currentTeamId);
 					if (!team) {
-						// Should not happen if issue has a team, but safeguard
-						throw new McpError(ErrorCode.InternalError, `Cannot validate stateId: Team '${currentTeamId}' associated with issue '${id}' not found.`);
+						throw new McpError(ErrorCode.InternalError, `Team with ID '${currentTeamId}' for issue '${id}' not found unexpectedly.`);
 					}
 					const states = await team.states({ filter: { id: { eq: stateId } } });
 					if (!states.nodes || states.nodes.length === 0) {
-						const availableStatesMessage = await getAvailableStatesMessage(linearClient, currentTeamId);
+						const availableStatesJson = await getAvailableStatesJson(linearClient, currentTeamId);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid stateId: '${stateId}' for team '${team.name}' (${currentTeamId}). State not found.${availableStatesMessage}`
+							`Invalid stateId: '${stateId}' for issue's team '${team.name}' (${currentTeamId}). State not found. Valid states for this team are: ${availableStatesJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableStatesMessage = await getAvailableStatesMessage(linearClient, currentTeamId);
+					const availableStatesJson = await getAvailableStatesJson(linearClient, currentTeamId);
 					let specificMessage = `Invalid stateId: '${stateId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -894,32 +908,30 @@ export const updateIssueTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableStatesMessage}`
+						`${specificMessage} Valid states for this team are: ${availableStatesJson}`
 					);
 				}
 			}
 
-			// Validate assigneeId if provided and not null
-			// If assigneeId is explicitly set to null, it means unassigning the user, which is a valid operation.
-			if (assigneeId) { // Only validate if assigneeId is truthy
+			if (assigneeId) {
 				try {
 					const assignee = await linearClient.user(assigneeId);
 					if (!assignee || !assignee.active) {
-						const availableAssigneesMessage = await getAvailableAssigneesMessage(linearClient);
-						let message = `Invalid assigneeId: '${assigneeId}'.`;
+						const availableAssigneesJson = await getAvailableAssigneesJson(linearClient);
+						let messageText = `Invalid assigneeId: '${assigneeId}'.`;
 						if (!assignee) {
-							message += " User not found.";
+							messageText += " User not found.";
 						} else if (!assignee.active) {
-							message += ` User '${assignee.displayName}' (${assigneeId}) is not active.`;
+							messageText += ` User '${assignee.displayName}' (${assigneeId}) is not active.`;
 						}
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`${message}${availableAssigneesMessage}`
+							`${messageText} Valid assignees are: ${availableAssigneesJson}`
 						);
 					}
 				} catch (error: unknown) {
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableAssigneesMessage = await getAvailableAssigneesMessage(linearClient);
+					const availableAssigneesJson = await getAvailableAssigneesJson(linearClient);
 					let specificMessage = `Invalid assigneeId: '${assigneeId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
@@ -934,127 +946,133 @@ export const updateIssueTool = defineTool({
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableAssigneesMessage}`
+						`${specificMessage} Valid assignees are: ${availableAssigneesJson}`
 					);
 				}
 			}
 
-			// Validate labelIds if provided
 			if (labelIds && labelIds.length > 0) {
-				// First, we need the teamId of the issue being updated.
-				const issueToUpdate = await linearClient.issue(id);
-				if (!issueToUpdate) {
-					throw new McpError(ErrorCode.MethodNotFound, `Cannot validate labelIds: Issue with ID '${id}' not found.`);
+				if (!currentTeamId) {
+					throw new McpError(ErrorCode.InternalError, `Issue '${id}' does not have a team associated, cannot validate labelIds. Please ensure the issue is associated with a team.`);
 				}
-				const issueTeam = await issueToUpdate.team;
-				if (!issueTeam) {
-					throw new McpError(ErrorCode.InternalError, `Cannot validate labelIds: Issue '${id}' does not have an associated team.`);
-				}
-				const currentTeamId = issueTeam.id;
-
 				try {
-					const team = await linearClient.team(currentTeamId); // Ensure team exists
-					if (!team) {
-						throw new McpError(ErrorCode.InternalError, `Cannot validate labelIds: Team '${currentTeamId}' associated with issue '${id}' not found.`);
-					}
-					const teamLabels = await team.labels();
-					const validLabelIds = teamLabels.nodes.map(label => label.id);
-					const invalidLabelIds = labelIds.filter(labelId => !validLabelIds.includes(labelId));
+					const team = await linearClient.team(currentTeamId);
+					if (!team) { throw new McpError(ErrorCode.InternalError, `Team with ID '${currentTeamId}' for issue '${id}' not found unexpectedly.`); }
 
+					const teamLabels = await team.labels({ filter: { id: { in: labelIds } } });
+					const foundLabelIds = teamLabels.nodes.map(label => label.id);
+					const invalidLabelIds = labelIds.filter(labelId => !foundLabelIds.includes(labelId));
 					if (invalidLabelIds.length > 0) {
-						const availableLabelsMessage = await getAvailableLabelsMessage(linearClient, currentTeamId);
+						const availableLabelsJson = await getAvailableLabelsJson(linearClient, currentTeamId);
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid labelId(s): '${invalidLabelIds.join(", ")}' for team '${team.name}' (${currentTeamId}). Labels not found.${availableLabelsMessage}`
+							`Invalid labelId(s): '${invalidLabelIds.join(", ")}' for issue's team '${team.name}' (${currentTeamId}). Label(s) not found. Valid labels for this team are: ${availableLabelsJson}`
 						);
 					}
 				} catch (error: unknown) {
-					if (error instanceof McpError) {
-						throw error;
-					}
 					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableLabelsMessage = await getAvailableLabelsMessage(linearClient, currentTeamId);
-					let specificMessage = `Error validating labelId(s) for team '${currentTeamId}'.`;
+					const availableLabelsJson = await getAvailableLabelsJson(linearClient, currentTeamId);
+					let specificMessage = `Invalid labelId(s) provided for team '${currentTeamId}'.`;
 					if (err.extensions?.userPresentableMessage) {
 						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
 					} else if (err.message) {
-						specificMessage = `${specificMessage} Error: ${err.message}`;
+						if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
+							specificMessage = `${specificMessage} One or more labels not found or IDs are invalid for team '${currentTeamId}'.`;
+						} else {
+							specificMessage = `${specificMessage} Error during validation: ${err.message}`;
+						}
 					} else {
-						specificMessage = `${specificMessage} An unknown error occurred during label validation.`;
+						specificMessage = `${specificMessage} An unknown error occurred during label validation for team '${currentTeamId}'.`;
 					}
 					throw new McpError(
 						ErrorCode.InvalidParams,
-						`${specificMessage}${availableLabelsMessage}`
+						`${specificMessage} Valid labels for this team are: ${availableLabelsJson}`
 					);
 				}
 			}
 
-			// Validate labelIds if provided
-			if (labelIds && labelIds.length > 0) {
-				// First, we need the teamId of the issue being updated.
-				const issueToUpdate = await linearClient.issue(id);
-				if (!issueToUpdate) {
-					throw new McpError(ErrorCode.MethodNotFound, `Cannot validate labelIds: Issue with ID '${id}' not found.`);
-				}
-				const issueTeam = await issueToUpdate.team;
-				if (!issueTeam) {
-					throw new McpError(ErrorCode.InternalError, `Cannot validate labelIds: Issue '${id}' does not have an associated team.`);
-				}
-				const currentTeamId = issueTeam.id;
 
-				try {
-					const team = await linearClient.team(currentTeamId); // Ensure team exists
-					if (!team) {
-						throw new McpError(ErrorCode.InternalError, `Cannot validate labelIds: Team '${currentTeamId}' associated with issue '${id}' not found.`);
-					}
-					const teamLabels = await team.labels();
-					const validLabelIds = teamLabels.nodes.map(label => label.id);
-					const invalidLabelIds = labelIds.filter(labelId => !validLabelIds.includes(labelId));
-
-					if (invalidLabelIds.length > 0) {
-						const availableLabelsMessage = await getAvailableLabelsMessage(linearClient, currentTeamId);
+			if (projectMilestoneId === null || projectMilestoneId) {
+				if (projectMilestoneId) {
+					try {
+						const projectMilestone = await linearClient.projectMilestone(projectMilestoneId);
+						if (!projectMilestone) {
+							const issueCurrentProject = await issueToUpdate.project;
+							const availableMilestonesJson = await getAvailableProjectMilestonesJson(linearClient, issueCurrentProject?.id);
+							throw new McpError(
+								ErrorCode.InvalidParams,
+								`Invalid projectMilestoneId: '${projectMilestoneId}'. Project milestone not found. ${availableMilestonesJson}`
+							);
+						}
+						const issueCurrentProjectId = (await issueToUpdate.project)?.id;
+						if (issueCurrentProjectId && projectMilestone.projectId !== issueCurrentProjectId) {
+							const issueProjectDetails = await linearClient.project(issueCurrentProjectId);
+							const milestoneProjectDetails = await projectMilestone.project;
+							const availableMilestonesForIssueProjectJson = await getAvailableProjectMilestonesJson(linearClient, issueCurrentProjectId);
+							throw new McpError(
+								ErrorCode.InvalidParams,
+								`Project milestone '${projectMilestone.name}' (${projectMilestoneId}) does not belong to the issue's project '${issueProjectDetails?.name}' (${issueCurrentProjectId}). It belongs to '${milestoneProjectDetails?.name}' (${milestoneProjectDetails?.id}). Valid milestones for issue's project are: ${availableMilestonesForIssueProjectJson}`
+							);
+						}
+					} catch (error: unknown) {
+						if (error instanceof McpError) throw error;
+						const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
+						const issueCurrentProject = await issueToUpdate.project;
+						const availableMilestonesJson = await getAvailableProjectMilestonesJson(linearClient, issueCurrentProject?.id);
+						let specificMessage = `Invalid projectMilestoneId: '${projectMilestoneId}'.`;
+						if (err.extensions?.userPresentableMessage) {
+							specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
+						} else if (err.message) {
+							if (err.message.toLowerCase().includes("not found") || err.message.toLowerCase().includes("no entity found") || err.message.toLowerCase().includes("api error") || err.message.toLowerCase().includes("invalid uuid")) {
+								specificMessage = `${specificMessage} Project milestone not found or ID is invalid.`;
+							} else {
+								specificMessage = `${specificMessage} Error during validation: ${err.message}`;
+							}
+						} else {
+							specificMessage = `${specificMessage} An unknown error occurred during project milestone validation.`;
+						}
 						throw new McpError(
 							ErrorCode.InvalidParams,
-							`Invalid labelId(s): '${invalidLabelIds.join(", ")}' for team '${team.name}' (${currentTeamId}). Labels not found.${availableLabelsMessage}`
+							`${specificMessage} ${availableMilestonesJson}`
 						);
 					}
-				} catch (error: unknown) {
-					if (error instanceof McpError) {
-						throw error;
-					}
-					const err = error as { message?: string; extensions?: { userPresentableMessage?: string } };
-					const availableLabelsMessage = await getAvailableLabelsMessage(linearClient, currentTeamId);
-					let specificMessage = `Error validating labelId(s) for team '${currentTeamId}'.`;
-					if (err.extensions?.userPresentableMessage) {
-						specificMessage = `${specificMessage} Details: ${err.extensions.userPresentableMessage}`;
-					} else if (err.message) {
-						specificMessage = `${specificMessage} Error: ${err.message}`;
-					} else {
-						specificMessage = `${specificMessage} An unknown error occurred during label validation.`;
-					}
-					throw new McpError(
-						ErrorCode.InvalidParams,
-						`${specificMessage}${availableLabelsMessage}`
-					);
 				}
 			}
 
-			const issuePayload = await linearClient.updateIssue(id, issueUpdateInput);
-			if (issuePayload.issue) {
-				const updatedIssue = await issuePayload.issue;
-				const projectMilestoneEntity = await updatedIssue.projectMilestone;
+
+			const issuePayload: IssuePayload = await linearClient.updateIssue(id, {
+				title,
+				description,
+				priority,
+				projectId,
+				stateId,
+				assigneeId,
+				labelIds,
+				dueDate,
+				projectMilestoneId,
+			});
+
+			if (issuePayload.success && issuePayload.issue) {
+				const issueEntity = await issuePayload.issue;
+				const stateEntity = await issueEntity.state;
+				const assigneeEntity = await issueEntity.assignee;
+				const projectMilestoneEntity = await issueEntity.projectMilestone;
 				return {
 					content: [
 						{
 							type: "text",
 							text: JSON.stringify({
-								id: updatedIssue.id,
-								identifier: updatedIssue.identifier,
-								title: updatedIssue.title,
-								url: updatedIssue.url,
-								projectMilestone: projectMilestoneEntity
-									? { id: projectMilestoneEntity.id, name: projectMilestoneEntity.name }
-									: null,
+								id: issueEntity.id,
+								identifier: issueEntity.identifier,
+								title: issueEntity.title,
+								description: issueEntity.description,
+								priority: issueEntity.priority,
+								state: stateEntity ? { id: stateEntity.id, name: stateEntity.name, color: stateEntity.color, type: stateEntity.type } : null,
+								assignee: assigneeEntity ? { id: assigneeEntity.id, name: assigneeEntity.name, email: assigneeEntity.email } : null,
+								projectMilestone: projectMilestoneEntity ? { id: projectMilestoneEntity.id, name: projectMilestoneEntity.name } : null,
+								createdAt: issueEntity.createdAt,
+								updatedAt: issueEntity.updatedAt,
+								url: issueEntity.url,
 							}),
 						},
 					],
@@ -1062,9 +1080,12 @@ export const updateIssueTool = defineTool({
 			}
 			throw new McpError(
 				ErrorCode.InternalError,
-				"Failed to update issue: No issue returned",
+				`Failed to update issue: ${issuePayload.lastSyncId ? `Sync ID ${issuePayload.lastSyncId}` : "No issue returned and no Sync ID"}`,
 			);
 		} catch (error: unknown) {
+			if (error instanceof McpError) {
+				throw error;
+			}
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,
@@ -1077,37 +1098,45 @@ export const updateIssueTool = defineTool({
 export const listCommentsTool = defineTool({
 	name: "list_comments",
 	description: "Retrieve comments for a Linear issue by ID",
-	inputSchema: {
-		issueId: z.string().describe("The issue ID"),
-	},
+	inputSchema: { issueId: z.string().describe("The ID of the issue to fetch comments for") },
 	handler: async ({ issueId }) => {
-		const linearClient = getLinearClient();
 		try {
-			const issue: Issue | undefined = await linearClient.issue(issueId);
+			const linearClient = getLinearClient();
+			const issue = await linearClient.issue(issueId);
 			if (!issue) {
-				throw new McpError(
-					ErrorCode.MethodNotFound,
-					`Issue with ID ${issueId} not found`,
-				);
+				let recentIssuesMessage = "";
+				try {
+					// biome-ignore lint/suspicious/noExplicitAny: SDK's PaginationOrderBy type is restrictive; "updatedAt" is expected at runtime.
+					const recentIssues = await linearClient.issues({ first: 10, orderBy: "updatedAt" as any });
+					if (recentIssues.nodes.length > 0) {
+						const issueList = recentIssues.nodes.map(iss => ({ id: iss.id, title: iss.title, identifier: iss.identifier }));
+						recentIssuesMessage = ` Recent issues include: ${JSON.stringify(issueList, null, 2)}`;
+					}
+				} catch (listError) {
+					recentIssuesMessage = " (Could not fetch recent issues for context.)";
+				}
+				throw new McpError(ErrorCode.InvalidParams, `Issue with ID '${issueId}' not found when trying to list comments.${recentIssuesMessage}`);
 			}
+
 			const comments = await issue.comments();
 			return {
 				content: [
 					{
 						type: "text",
 						text: JSON.stringify(
-							comments.nodes.map((comment) => ({
+							comments.nodes.map((comment: LinearComment) => ({
 								id: comment.id,
 								body: comment.body,
-								userId: comment.userId,
 								createdAt: comment.createdAt,
 								updatedAt: comment.updatedAt,
+								userId: comment.userId,
 							})),
 						),
 					},
 				],
 			};
 		} catch (error: unknown) {
+      if (error instanceof McpError) throw error;
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,
@@ -1122,28 +1151,40 @@ export const createCommentTool = defineTool({
 	description: "Create a comment on a Linear issue by ID",
 	inputSchema: CommentCreateSchema,
 	handler: async ({ issueId, body }) => {
-		const linearClient = getLinearClient();
 		try {
-			const issue: Issue | undefined = await linearClient.issue(issueId);
-			if (!issue) {
-				throw new McpError(
-					ErrorCode.MethodNotFound,
-					`Issue with ID ${issueId} not found`,
-				);
-			}
-			const commentPayload = await linearClient.createComment({
+			const linearClient = getLinearClient();
+			const issue = await linearClient.issue(issueId);
+      if (!issue) {
+				let recentIssuesMessage = "";
+				try {
+					// biome-ignore lint/suspicious/noExplicitAny: SDK's PaginationOrderBy type is restrictive; "updatedAt" is expected at runtime.
+					const recentIssues = await linearClient.issues({ first: 10, orderBy: "updatedAt" as any });
+					if (recentIssues.nodes.length > 0) {
+						const issueList = recentIssues.nodes.map(iss => ({ id: iss.id, title: iss.title, identifier: iss.identifier }));
+						recentIssuesMessage = ` Recent issues include: ${JSON.stringify(issueList, null, 2)}`;
+					}
+				} catch (listError) {
+					recentIssuesMessage = " (Could not fetch recent issues for context.)";
+				}
+        throw new McpError(ErrorCode.InvalidParams, `Issue with ID '${issueId}' not found when trying to create comment.${recentIssuesMessage}`);
+      }
+
+			const commentPayload: CommentPayload = await linearClient.createComment({
 				issueId,
 				body,
 			});
-			if (commentPayload.comment) {
-				const createdComment = await commentPayload.comment;
+			if (commentPayload.success && commentPayload.comment) {
+				const comment = await commentPayload.comment;
 				return {
 					content: [
 						{
 							type: "text",
 							text: JSON.stringify({
-								id: createdComment.id,
-								body: createdComment.body,
+								id: comment.id,
+								body: comment.body,
+								createdAt: comment.createdAt,
+								updatedAt: comment.updatedAt,
+								userId: comment.userId,
 							}),
 						},
 					],
@@ -1151,9 +1192,10 @@ export const createCommentTool = defineTool({
 			}
 			throw new McpError(
 				ErrorCode.InternalError,
-				"Failed to create comment: No comment returned",
+				`Failed to create comment: ${commentPayload.lastSyncId ? `Sync ID ${commentPayload.lastSyncId}` : "No comment returned and no Sync ID"}`,
 			);
 		} catch (error: unknown) {
+      if (error instanceof McpError) throw error;
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,
@@ -1168,35 +1210,34 @@ export const getIssueGitBranchNameTool = defineTool({
 	description: "Retrieve the branch name for a Linear issue by ID",
 	inputSchema: IdSchema,
 	handler: async ({ id }) => {
-		const linearClient = getLinearClient();
 		try {
-			const issue: Issue | undefined = await linearClient.issue(id);
+			const linearClient = getLinearClient();
+			const issue = await linearClient.issue(id);
 			if (!issue) {
-				throw new McpError(
-					ErrorCode.MethodNotFound,
-					`Issue with ID ${id} not found`,
-				);
+				let recentIssuesMessage = "";
+				try {
+					// biome-ignore lint/suspicious/noExplicitAny: SDK's PaginationOrderBy type is restrictive; "updatedAt" is expected at runtime.
+					const recentIssues = await linearClient.issues({ first: 10, orderBy: "updatedAt" as any });
+					if (recentIssues.nodes.length > 0) {
+						const issueList = recentIssues.nodes.map(iss => ({ id: iss.id, title: iss.title, identifier: iss.identifier }));
+						recentIssuesMessage = ` Recent issues include: ${JSON.stringify(issueList, null, 2)}`;
+					}
+				} catch (listError) {
+					recentIssuesMessage = " (Could not fetch recent issues for context.)";
+				}
+				throw new McpError(ErrorCode.InvalidParams, `Issue with ID '${id}' not found when trying to get branch name.${recentIssuesMessage}`);
 			}
-			const identifier = issue.identifier.toLowerCase();
-			let title = issue.title || "";
-			title = title
-				.toLowerCase()
-				.replace(/[^\w\s-]/g, "")
-				.trim()
-				.replace(/\s+/g, "-");
+			const branchName = await issue.branchName;
 			return {
 				content: [
 					{
 						type: "text",
-						text: JSON.stringify({
-							branchName: `${identifier}-${title}`,
-							identifier: issue.identifier,
-							title: issue.title,
-						}),
+						text: JSON.stringify({ branchName }),
 					},
 				],
 			};
 		} catch (error: unknown) {
+      if (error instanceof McpError) throw error;
 			const err = error as { message?: string };
 			throw new McpError(
 				ErrorCode.InternalError,
@@ -1206,12 +1247,20 @@ export const getIssueGitBranchNameTool = defineTool({
 	},
 });
 
-export const issueTools = {
-	listIssuesTool,
-	getIssueTool,
-	createIssueTool,
-	updateIssueTool,
-	listCommentsTool,
-	createCommentTool,
-	getIssueGitBranchNameTool,
-};
+// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+export const issueTools: ToolDefinition<any>[] = [
+	// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+	listIssuesTool as ToolDefinition<any>,
+	// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+	getIssueTool as ToolDefinition<any>,
+	// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+	createIssueTool as ToolDefinition<any>,
+	// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+	updateIssueTool as ToolDefinition<any>,
+	// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+	listCommentsTool as ToolDefinition<any>,
+	// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+	createCommentTool as ToolDefinition<any>,
+	// biome-ignore lint/suspicious/noExplicitAny: Workaround for TypeScript variance with generic ToolDefinition handlers in an array.
+	getIssueGitBranchNameTool as ToolDefinition<any>,
+];

@@ -1,13 +1,29 @@
 import type { LinearClient, Project, ProjectMilestone } from '@linear/sdk';
+import { McpError, ErrorCode } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
 import {
   ListProjectMilestonesInputSchema,
   CreateProjectMilestoneInputSchema,
   UpdateProjectMilestoneInputSchema,
   DeleteProjectMilestoneInputSchema,
+  defineTool, // Ensure defineTool is imported
 } from '../schemas/index.js';
-import { defineTool } from '../schemas/index.js';
 import { getLinearClient } from '../utils/linear-client.js';
+
+// Helper function to get available projects for error messages
+async function getAvailableProjectsJsonForError(linearClient: LinearClient): Promise<string> {
+  try {
+    const projects = await linearClient.projects();
+    if (!projects.nodes || projects.nodes.length === 0) {
+      return "[]";
+    }
+    const projectList = projects.nodes.map((p) => ({ id: p.id, name: p.name }));
+    return JSON.stringify(projectList, null, 2);
+  } catch (e) {
+    const error = e as Error;
+    return `(Could not fetch available projects for context: ${error.message})`;
+  }
+}
 
 export const listProjectMilestonesTool = defineTool({
   name: 'list_project_milestones',
@@ -18,29 +34,35 @@ export const listProjectMilestonesTool = defineTool({
     try {
       const project = await linear.project(projectId);
       if (!project) {
-        throw new Error(`Project with ID "${projectId}" not found.`);
+        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
+        throw new McpError(ErrorCode.InvalidParams, `Project with ID "${projectId}" not found. Valid projects are: ${availableProjectsJson}`);
       }
-      // Using the hint: project.milestones()
-      // TS Error: Property 'milestones' does not exist on type 'Project'.
       const milestonesResult = await project.projectMilestones();
       let resultNodes: ProjectMilestone[] = [];
+
       if (milestonesResult && Array.isArray(milestonesResult.nodes)) {
-        resultNodes = milestonesResult.nodes;
+          resultNodes = milestonesResult.nodes;
+      } else if (milestonesResult && typeof milestonesResult === 'object' && milestonesResult !== null && 'nodes' in milestonesResult && Array.isArray((milestonesResult as { nodes?: ProjectMilestone[] }).nodes)) {
+          resultNodes = (milestonesResult as { nodes: ProjectMilestone[] }).nodes;
       } else if (Array.isArray(milestonesResult)) {
-        resultNodes = milestonesResult as ProjectMilestone[];
+          resultNodes = milestonesResult as ProjectMilestone[];
+      } else if (project.name) { // Project exists but milestonesResult is not in expected format or empty
+          // This implies no milestones or an unexpected SDK response for milestones
       } else {
-        throw new Error('Could not retrieve milestones. The structure returned by project.milestones() was not as expected or the method is unavailable.');
+          throw new McpError(ErrorCode.InternalError, 'Could not retrieve milestones. Project data was inconsistent after initial fetch.');
       }
+
       return {
-        content: [{ type: 'text', text: JSON.stringify(resultNodes) }],
+        content: [{ type: 'text', text: JSON.stringify(resultNodes.map(m => ({id: m.id, name: m.name, description: m.description, targetDate: m.targetDate, sortOrder: m.sortOrder, projectId: m.projectId}))) }],
       };
     } catch (error: unknown) {
-      console.error('Failed to list project milestones:', error);
-      if (error instanceof Error) {
-        // Propagate the error message in a way the MCP server can handle
-        return { content: [{type: 'text', text: `Error: ${error.message}`}], isError: true };
+      if (error instanceof McpError) throw error;
+      const err = error as Error;
+      if (err.message.toLowerCase().includes("not found") && err.message.toLowerCase().includes(projectId.toLowerCase())) {
+        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
+        throw new McpError(ErrorCode.InvalidParams, `Project with ID "${projectId}" not found when listing milestones. Valid projects are: ${availableProjectsJson}`);
       }
-      return { content: [{type: 'text', text: 'Error: Failed to list project milestones due to an unknown error.'}], isError: true };
+      throw new McpError(ErrorCode.InternalError, `Failed to list project milestones: ${err.message || "Unknown error"}`);
     }
   },
 });
@@ -52,6 +74,12 @@ export const createProjectMilestoneTool = defineTool({
   handler: async ({ projectId, name, description, targetDate }: z.infer<typeof CreateProjectMilestoneInputSchema>) => {
     const linear = getLinearClient();
     try {
+      const project = await linear.project(projectId);
+      if (!project) {
+        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
+        throw new McpError(ErrorCode.InvalidParams, `Project with ID "${projectId}" not found. Cannot create milestone. Valid projects are: ${availableProjectsJson}`);
+      }
+
       const payload: {
         projectId: string;
         name: string;
@@ -64,25 +92,23 @@ export const createProjectMilestoneTool = defineTool({
       if (description) payload.description = description;
       if (targetDate) payload.targetDate = new Date(targetDate);
 
-      // Using the hint: linear.projectMilestoneCreate
-      // TS Error: Property 'projectMilestoneCreate' does not exist on type 'LinearClient'.
       const milestoneCreatePayload = await linear.createProjectMilestone(payload);
-      if (!milestoneCreatePayload.success || !milestoneCreatePayload.projectMilestone) {
-        const entity = await milestoneCreatePayload.projectMilestone;
-        if (!entity) {
-          throw new Error('Failed to create project milestone in Linear: No entity returned and no specific error message from SDK.');
-        }
-        throw new Error('Failed to create project milestone in Linear: Operation reported as not successful by SDK.');
+      const createdMilestone = await milestoneCreatePayload.projectMilestone;
+
+      if (!milestoneCreatePayload.success || !createdMilestone) {
+         throw new McpError(ErrorCode.InternalError, `Failed to create project milestone in Linear. Success: ${milestoneCreatePayload.success}, Last Sync ID: ${milestoneCreatePayload.lastSyncId}`);
       }
       return {
-        content: [{ type: 'text', text: JSON.stringify(milestoneCreatePayload.projectMilestone) }],
+        content: [{ type: 'text', text: JSON.stringify({id: createdMilestone.id, name: createdMilestone.name, description: createdMilestone.description, targetDate: createdMilestone.targetDate, sortOrder: createdMilestone.sortOrder, projectId: createdMilestone.projectId}) }],
       };
     } catch (error: unknown) {
-      console.error('Failed to create project milestone:', error);
-      if (error instanceof Error) {
-        return { content: [{type: 'text', text: `Error: ${error.message}`}], isError: true };
+      if (error instanceof McpError) throw error;
+      const err = error as Error;
+      if (err.message.toLowerCase().includes("not found") && err.message.toLowerCase().includes(projectId.toLowerCase())) {
+        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
+        throw new McpError(ErrorCode.InvalidParams, `Project with ID "${projectId}" not found when creating milestone. Valid projects are: ${availableProjectsJson}`);
       }
-      return { content: [{type: 'text', text: 'Error: Failed to create project milestone due to an unknown error.'}], isError: true };
+      throw new McpError(ErrorCode.InternalError, `Failed to create project milestone: ${err.message || "Unknown error"}`);
     }
   },
 });
@@ -100,24 +126,29 @@ export const updateProjectMilestoneTool = defineTool({
       if (targetDate) payload.targetDate = new Date(targetDate);
 
       if (Object.keys(payload).length === 0) {
-        throw new Error('No update data provided for project milestone.');
+        // Changed to McpError
+        throw new McpError(ErrorCode.InvalidParams, 'No update data provided for project milestone.');
       }
 
-      // Using the hint: linear.projectMilestoneUpdate
-      // TS Error: Property 'projectMilestoneUpdate' does not exist on type 'LinearClient'.
       const milestoneUpdatePayload = await linear.updateProjectMilestone(milestoneId, payload);
-      if (!milestoneUpdatePayload.success || !milestoneUpdatePayload.projectMilestone) {
-        throw new Error(`Failed to update project milestone "${milestoneId}" in Linear: Operation reported as not successful by SDK.`);
+      const updatedMilestone = await milestoneUpdatePayload.projectMilestone;
+
+      if (!milestoneUpdatePayload.success || !updatedMilestone) {
+        try {
+          await linear.projectMilestone(milestoneId);
+          throw new McpError(ErrorCode.InternalError, `Failed to update project milestone "${milestoneId}" in Linear. Success: ${milestoneUpdatePayload.success}, Last Sync ID: ${milestoneUpdatePayload.lastSyncId}`);
+        } catch (fetchError) {
+          // Cannot list all milestones easily without project context.
+          throw new McpError(ErrorCode.InvalidParams, `Project milestone with ID "${milestoneId}" not found or update failed. Please verify the milestone ID.`);
+        }
       }
       return {
-        content: [{ type: 'text', text: JSON.stringify(milestoneUpdatePayload.projectMilestone) }],
+        content: [{ type: 'text', text: JSON.stringify({id: updatedMilestone.id, name: updatedMilestone.name, description: updatedMilestone.description, targetDate: updatedMilestone.targetDate, sortOrder: updatedMilestone.sortOrder, projectId: updatedMilestone.projectId}) }],
       };
     } catch (error: unknown) {
-      console.error('Failed to update project milestone:', error);
-      if (error instanceof Error) {
-        return { content: [{type: 'text', text: `Error: ${error.message}`}], isError: true };
-      }
-      return { content: [{type: 'text', text: 'Error: Failed to update project milestone due to an unknown error.'}], isError: true };
+      if (error instanceof McpError) throw error;
+      const err = error as Error;
+      throw new McpError(ErrorCode.InternalError, `Failed to update project milestone: ${err.message || "Unknown error"}`);
     }
   },
 });
@@ -131,17 +162,20 @@ export const deleteProjectMilestoneTool = defineTool({
     try {
       const deletePayload = await linear.deleteProjectMilestone(milestoneId);
       if (!deletePayload.success) {
-        throw new Error(`Failed to delete project milestone "${milestoneId}" in Linear: Operation reported as not successful by SDK.`);
+        try {
+          await linear.projectMilestone(milestoneId);
+          throw new McpError(ErrorCode.InternalError, `Failed to delete project milestone "${milestoneId}" in Linear. Success: ${deletePayload.success}, Last Sync ID: ${deletePayload.lastSyncId}`);
+        } catch (fetchError) {
+          throw new McpError(ErrorCode.InvalidParams, `Project milestone with ID "${milestoneId}" not found. Please verify the milestone ID.`);
+        }
       }
       return {
         content: [{ type: 'text', text: JSON.stringify({ success: true, message: `Project milestone "${milestoneId}" deleted successfully.` }) }],
       };
     } catch (error: unknown) {
-      console.error('Failed to delete project milestone:', error);
-      if (error instanceof Error) {
-        return { content: [{type: 'text', text: `Error: ${error.message}`}], isError: true };
-      }
-      return { content: [{type: 'text', text: 'Error: Failed to delete project milestone due to an unknown error.'}], isError: true };
+      if (error instanceof McpError) throw error;
+      const err = error as Error;
+      throw new McpError(ErrorCode.InternalError, `Failed to delete project milestone: ${err.message || "Unknown error"}`);
     }
   },
 });

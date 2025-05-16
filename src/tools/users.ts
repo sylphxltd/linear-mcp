@@ -120,10 +120,22 @@ export const getUserTool = defineTool({
 				`Failed to get user: ${err.message || "Unknown error"}`,
 			);
 		}
-		throw new McpError(
-			ErrorCode.MethodNotFound,
-			`User with ID or name "${query}" not found`,
-		);
+		// If user not found by ID, name, or email, fetch all users and include in error message
+		try {
+			const allUsers = await linearClient.users();
+			const validUsers = allUsers.nodes.map(u => ({ id: u.id, name: u.name, email: u.email, displayName: u.displayName, active: u.active }));
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`User with query "${query}" not found. Valid users are: ${JSON.stringify(validUsers, null, 2)}`,
+			);
+		} catch (listError: unknown) {
+			const err = listError as { message?: string };
+			// If listing users also fails, throw a generic not found error
+			throw new McpError(
+				ErrorCode.InvalidParams,
+				`User with query "${query}" not found. Also failed to list available users: ${err.message || "Unknown error"}`,
+			);
+		}
 	},
 });
 

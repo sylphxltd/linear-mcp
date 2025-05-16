@@ -11,9 +11,21 @@ export const listIssueLabelsTools = defineTool({
 		try {
 			const team = await linearClient.team(teamId);
 			if (!team) {
+				let availableTeamsMessage = "";
+				try {
+					const allTeams = await linearClient.teams();
+					if (allTeams.nodes.length > 0) {
+						const teamList = allTeams.nodes.map(t => ({ id: t.id, name: t.name }));
+						availableTeamsMessage = ` Valid teams are: ${JSON.stringify(teamList, null, 2)}`;
+					} else {
+						availableTeamsMessage = " No teams available to list.";
+					}
+				} catch (listError) {
+					availableTeamsMessage = " (Could not fetch available teams for context.)";
+				}
 				throw new McpError(
-					ErrorCode.MethodNotFound,
-					`Team with ID ${teamId} not found`,
+					ErrorCode.InvalidParams,
+					`Team with ID '${teamId}' not found when trying to list labels.${availableTeamsMessage}`
 				);
 			}
 			const labels = await team.labels();
