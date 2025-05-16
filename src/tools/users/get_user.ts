@@ -1,7 +1,7 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
-import { UserQuerySchema } from './shared.js';
 import { defineTool } from '../shared/tool-definition.js';
+import { UserQuerySchema } from './shared.js';
 
 export const getUserTool = defineTool({
   name: 'get_user',

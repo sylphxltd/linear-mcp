@@ -1,9 +1,9 @@
 import {
-  LinearDocument,
   type Attachment,
   type Issue,
   type IssuePayload,
   type LinearClient,
+  LinearDocument,
   type Project,
   type ProjectMilestone,
   type Team,

@@ -17,10 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/sylphxltd/linear-mcp.git"
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
+  "files": ["dist", "README.md"],
   "scripts": {
     "format": "biome format --write .",
     "check": "biome check --write --unsafe .",
@@ -40,9 +37,10 @@
     "zod": "3.24.4"
   },
   "devDependencies": {
+    "@biomejs/biome": "1.9.4",
+    "@changesets/cli": "2.29.4",
     "@commitlint/cli": "19.8.1",
     "@commitlint/config-conventional": "19.8.1",
-    "@changesets/cli": "2.29.4",
     "@sylphlab/biome-config": "0.2.0",
     "@types/node": "22.15.18",
     "lefthook": "1.11.12",

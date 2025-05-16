@@ -1,4 +1,5 @@
 import type { LinearClient } from '@linear/sdk';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { IssueUpdateSchema } from './shared.js';
@@ -11,7 +12,6 @@ import {
   validateProjectMilestone,
   validateState,
 } from './shared.js';
-import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 
 export const updateIssueTool = defineTool({
   name: 'update_issue',
@@ -27,10 +27,10 @@ export const updateIssueTool = defineTool({
     assigneeId,
     labelIds,
     dueDate,
-    projectMilestoneId
+    projectMilestoneId,
   }) => {
     const linearClient = getLinearClient();
-    
+
     // Validate the issue exists and get current values
     const issueToUpdate = await validateIssueExists(linearClient, id, 'updating issue');
     const currentTeamId = (await issueToUpdate.team)?.id;
@@ -46,7 +46,7 @@ export const updateIssueTool = defineTool({
       stateId,
       assigneeId,
       labelIds,
-      projectMilestoneId
+      projectMilestoneId,
     });
 
     // Construct update payload with only defined fields
@@ -59,28 +59,28 @@ export const updateIssueTool = defineTool({
       assigneeId,
       labelIds,
       dueDate,
-      projectMilestoneId
+      projectMilestoneId,
     });
 
     // Update the issue
     try {
       const issueUpdate = await linearClient.updateIssue(id, updatePayload);
       const updatedIssue = await issueUpdate.issue;
-      
+
       if (!updatedIssue) {
         throw new McpError(
           ErrorCode.InternalError,
-          `Failed to update issue or retrieve details. Sync ID: ${issueUpdate.lastSyncId}`
+          `Failed to update issue or retrieve details. Sync ID: ${issueUpdate.lastSyncId}`,
         );
       }
-      
+
       const detailedUpdatedIssue = await mapIssueToDetails(updatedIssue, false);
       return { content: [{ type: 'text', text: JSON.stringify(detailedUpdatedIssue) }] };
     } catch (error) {
       if (error instanceof McpError) throw error;
       throw new McpError(
         ErrorCode.InternalError,
-        `Error updating issue: ${(error as Error).message}`
+        `Error updating issue: ${(error as Error).message}`,
       );
     }
   },
@@ -128,7 +128,7 @@ async function validateInputParameters({
   stateId,
   assigneeId,
   labelIds,
-  projectMilestoneId
+  projectMilestoneId,
 }: ValidationParams): Promise<void> {
   // Validate project if provided
   if (projectId) {
@@ -140,7 +140,7 @@ async function validateInputParameters({
     if (!currentTeamId) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Issue '${id}' has no team, cannot validate stateId.`
+        `Issue '${id}' has no team, cannot validate stateId.`,
       );
     }
     await validateState(linearClient, currentTeamId, stateId, 'updating issue');
@@ -156,7 +156,7 @@ async function validateInputParameters({
     if (!currentTeamId) {
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Issue '${id}' has no team, cannot validate labelIds.`
+        `Issue '${id}' has no team, cannot validate labelIds.`,
       );
     }
     await validateLabels(linearClient, currentTeamId, labelIds, 'updating issue');
@@ -170,7 +170,7 @@ async function validateInputParameters({
         linearClient,
         projectMilestoneId,
         targetProjectId,
-        'updating issue'
+        'updating issue',
       );
     }
     // If projectMilestoneId is null, it's valid (removing the milestone)
@@ -189,7 +189,7 @@ function buildUpdatePayload({
   assigneeId,
   labelIds,
   dueDate,
-  projectMilestoneId
+  projectMilestoneId,
 }: UpdatePayloadParams): Record<string, unknown> {
   return {
     ...(title !== undefined && { title }),
