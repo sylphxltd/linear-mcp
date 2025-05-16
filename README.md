@@ -1,6 +1,6 @@
 # Linear MCP Server
 
-A Model Context Protocol (MCP) server for interacting with Linear issues, projects, teams, and more.
+A Model Context Protocol (MCP) server for interacting with Linear issues, projects, teams, cycles and more.
 
 ## Features
 
@@ -80,6 +80,13 @@ Configure your MCP host (e.g., `mcp_settings.json`) to use npx:
 ### Labels
 
 - `list_issue_labels`: List available issue labels in a Linear team
+
+### Cycles
+
+- `list_cycles`: List cycles in the user's Linear workspace
+- `get_cycle`: Retrieve details of a specific cycle in Linear
+- `create_cycle`: Create a new cycle in Linear
+- `update_cycle`: Update an existing Linear cycle
 
 ### My Issues
 
