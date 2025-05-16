@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.2.0
+
+### Minor Changes
+
+- d0f31e1: Remove Cycles, add Project Milestones, update README
+
 ## 1.1.2
 
 ### Patch Changes
