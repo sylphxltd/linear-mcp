@@ -102,10 +102,22 @@ export const getTeamTool = defineTool({
 				`Failed to get team: ${err.message || "Unknown error"}`,
 			);
 		}
-		throw new McpError(
-			ErrorCode.MethodNotFound,
-			`Team with ID or name "${query}" not found`,
-		);
+		// If team not found by ID, name, or key, fetch all teams and include in error message
+		try {
+			const allTeams = await linearClient.teams();
+			const teamList = allTeams.nodes.map(team => `${team.name} (${team.key})`).join(', ');
+			throw new McpError(
+				ErrorCode.MethodNotFound,
+				`Team with ID or name "${query}" not found. Available teams: ${teamList}`,
+			);
+		} catch (listError: unknown) {
+			const err = listError as { message?: string };
+			// If listing teams also fails, throw a generic not found error
+			throw new McpError(
+				ErrorCode.MethodNotFound,
+				`Team with ID or name "${query}" not found. Failed to list available teams: ${err.message || "Unknown error"}`,
+			);
+		}
 	},
 });
 
