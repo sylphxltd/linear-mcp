@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { Team } from '@linear/sdk';
+import type { Issue, IssueLabel, Team } from '@linear/sdk';
 import type { LinearClient } from '@linear/sdk';
 
 // --- Tool definition utility (local copy) ---
@@ -44,7 +44,7 @@ export async function getAvailableTeamsMessage(linearClient: LinearClient): Prom
  * Formats an array of label nodes for output.
  */
 export function formatLabelNodes(
-  labels: { [key: string]: any }[],
+  labels: IssueLabel[],
 ): object[] {
   return labels.map((label) => ({
     id: label.id,
