@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.3.0
+
+### Minor Changes
+
+- Enhanced ID error handling in MCP tools to provide a list of valid IDs upon error.
+
 ## 1.2.0
 
 ### Minor Changes
