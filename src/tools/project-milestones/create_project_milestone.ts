@@ -1,9 +1,12 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
+import {
+  isEntityError,
+  getAvailableProjectsJson,
+} from '../shared/entity-error-handler.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { CreateProjectMilestoneInputSchema } from './shared.js';
-import { getAvailableProjectsJsonForError } from './shared.js';
 
 export const createProjectMilestoneTool = defineTool({
   name: 'create_project_milestone',
@@ -17,9 +20,12 @@ export const createProjectMilestoneTool = defineTool({
   }: z.infer<typeof CreateProjectMilestoneInputSchema>) => {
     const linear = getLinearClient();
     try {
+      // Pre-fetching project to ensure it exists before creating milestone.
+      // The createProjectMilestone SDK call itself might not give a specific "project not found"
+      // if projectId is simply invalid for the milestone creation.
       const project = await linear.project(projectId);
       if (!project) {
-        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
+        const availableProjectsJson = await getAvailableProjectsJson(linear);
         throw new McpError(
           ErrorCode.InvalidParams,
           `Project with ID "${projectId}" not found. Cannot create milestone. Valid projects are: ${availableProjectsJson}`,
@@ -63,21 +69,22 @@ export const createProjectMilestoneTool = defineTool({
         ],
       };
     } catch (error: unknown) {
-      if (error instanceof McpError) throw error;
+      if (error instanceof McpError) throw error; // Re-throw existing McpErrors
+
       const err = error as Error;
-      if (
-        err.message.toLowerCase().includes('not found') &&
-        err.message.toLowerCase().includes(projectId.toLowerCase())
-      ) {
-        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          `Project with ID "${projectId}" not found when creating milestone. Valid projects are: ${availableProjectsJson}`,
-        );
+      if (isEntityError(err.message)) {
+        let availableEntitiesJson = '[]';
+        // Primarily, errors here would be due to projectId
+        if (err.message.toLowerCase().includes('project')) {
+          availableEntitiesJson = await getAvailableProjectsJson(linear);
+        }
+        throw new Error(`${err.message}\nAvailable: ${availableEntitiesJson}`);
       }
+
+      // Fallback for other errors
       throw new McpError(
         ErrorCode.InternalError,
-        `Failed to create project milestone: ${err.message || 'Unknown error'}`,
+        `Failed to create project milestone for project ID "${projectId}": ${err.message || 'Unknown error'}`,
       );
     }
   },

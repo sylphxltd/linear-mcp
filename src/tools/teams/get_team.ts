@@ -1,5 +1,9 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import {
+  isEntityError,
+  getAvailableTeamsJson,
+} from '../shared/entity-error-handler.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { TeamQuerySchema } from './shared.js';
 
@@ -30,13 +34,19 @@ export const getTeamTool = defineTool({
           ],
         };
       }
-    } catch (_error: unknown) {
-      // continue to search by name/key
+    } catch (idError: unknown) {
+      const idErr = idError as Error;
+      if (isEntityError(idErr.message)) {
+        const availableTeams = await getAvailableTeamsJson(linearClient);
+        throw new Error(`${idErr.message}\nAvailable teams: ${availableTeams}`);
+      }
+      // Allow to proceed to search by name/key
     }
+
     try {
       const teams = await linearClient.teams({
         filter: {
-          or: [{ name: { eq: query } }, { key: { eq: query } }],
+          or: [{ name: { eqIgnoreCase: query } }, { key: { eqIgnoreCase: query } }],
         },
       });
       if (teams.nodes.length > 0) {
@@ -59,30 +69,32 @@ export const getTeamTool = defineTool({
           ],
         };
       }
-    } catch (error: unknown) {
-      const err = error as { message?: string };
+    } catch (nameKeyError: unknown) {
+      if (nameKeyError instanceof McpError) throw nameKeyError;
+      const err = nameKeyError as Error;
+      // isEntityError might not be relevant here unless the name/key search itself can cause entity-specific errors
       throw new McpError(
         ErrorCode.InternalError,
-        `Failed to get team: ${err.message || 'Unknown error'}`,
+        `Error searching teams by name/key "${query}": ${err.message || 'Unknown error'}`,
       );
     }
-    // If team not found by ID, name, or key, fetch all teams and include in error message
+
+    // If team not found by ID, name, or key, throw an error with available teams.
     try {
-      const allTeams = await linearClient.teams();
-      const validTeams = allTeams.nodes.map((team) => ({
-        id: team.id,
-        name: team.name,
-      }));
+      const availableTeams = await getAvailableTeamsJson(linearClient);
+      const notFoundMessage = `Entity not found: Team - Could not find referenced Team with query "${query}".`;
+      if (isEntityError(notFoundMessage)) {
+        throw new Error(`${notFoundMessage}\nAvailable teams: ${availableTeams}`);
+      }
       throw new McpError(
         ErrorCode.InvalidParams,
-        `Team with query "${query}" not found. Valid teams are: ${JSON.stringify(validTeams, null, 2)}`,
+        `Team with query "${query}" not found. Valid teams are: ${availableTeams}`,
       );
-    } catch (listError: unknown) {
-      const err = listError as { message?: string };
-      // If listing teams also fails, throw a generic not found error
+    } catch (finalError: unknown) {
+      if (finalError instanceof McpError || finalError instanceof Error) throw finalError;
       throw new McpError(
-        ErrorCode.InvalidParams,
-        `Team with query "${query}" not found. Also failed to list available teams: ${err.message || 'Unknown error'}`,
+        ErrorCode.InternalError,
+        `Team with query "${query}" not found, and failed to list available teams: ${String(finalError)}`,
       );
     }
   },

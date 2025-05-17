@@ -10,23 +10,9 @@ export const LabelListSchema = {
 };
 
 /**
- * Fetches a message listing all available teams, or a fallback message if none found.
+ * getAvailableTeamsMessage removed.
+ * Tools should import getAvailableTeamsJson from '../shared/entity-error-handler.js'
  */
-export async function getAvailableTeamsMessage(linearClient: LinearClient): Promise<string> {
-  try {
-    const allTeams = await linearClient.teams();
-    if (allTeams.nodes.length > 0) {
-      const teamList = allTeams.nodes.map((t: Team) => ({
-        id: t.id,
-        name: t.name,
-      }));
-      return ` Valid teams are: ${JSON.stringify(teamList, null, 2)}`;
-    }
-    return ' No teams available to list.';
-  } catch {
-    return ' (Could not fetch available teams for context.)';
-  }
-}
 
 /**
  * Formats an array of label nodes for output.

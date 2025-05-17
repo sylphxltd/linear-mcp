@@ -1,5 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { isEntityError } from '../shared/entity-error-handler.js';
 import { defineTool } from '../shared/tool-definition.js';
 
 export const listTeamsTool = defineTool({
@@ -30,7 +31,12 @@ export const listTeamsTool = defineTool({
         ],
       };
     } catch (error: unknown) {
-      const err = error as { message?: string };
+      if (error instanceof McpError) throw error;
+      const err = error as Error;
+      if (isEntityError(err.message)) {
+        // No specific entity ID context for list_teams, so just re-throw the message.
+        throw new Error(err.message);
+      }
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to list teams: ${err.message || 'Unknown error'}`,

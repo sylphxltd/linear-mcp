@@ -1,5 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { isEntityError } from '../shared/entity-error-handler.js'; // Added
 import { PaginationSchema } from '../issues/shared.js';
 import { defineTool } from '../shared/tool-definition.js';
 
@@ -49,7 +50,12 @@ export const listMyIssuesTool = defineTool({
         ],
       };
     } catch (error: unknown) {
-      const err = error as { message?: string };
+      if (error instanceof McpError) throw error;
+      const err = error as Error;
+      if (isEntityError(err.message)) {
+        // Unlikely to be a specific entity ID error here unless viewer itself fails in a recognizable way
+        throw new Error(err.message);
+      }
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to list my issues: ${err.message || 'Unknown error'}`,

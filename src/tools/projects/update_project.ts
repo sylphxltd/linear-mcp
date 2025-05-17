@@ -1,20 +1,22 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import {
+  isEntityError,
+  getAvailableProjectsJson,
+  getAvailableTeamsJson,
+} from '../shared/entity-error-handler.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { ProjectUpdateSchema } from './shared.js';
 import type { ProjectUpdateInput } from './shared.js';
-import { validateProjectUpdateArgsOrThrow } from './shared.js';
 
 export const updateProjectTool = defineTool({
   name: 'update_project',
   description: 'Update an existing Linear project',
   inputSchema: ProjectUpdateSchema,
   handler: async ({ id, name, description, content, startDate, targetDate, teamIds }) => {
+    const linearClient = getLinearClient();
     try {
-      const linearClient = getLinearClient();
-
-      await validateProjectUpdateArgsOrThrow(linearClient, id, teamIds);
-
+      // Validation is removed, SDK call will throw if IDs are invalid.
       const projectInput: ProjectUpdateInput & { teamIds?: string[] } = {
         name,
         description,
@@ -54,13 +56,24 @@ export const updateProjectTool = defineTool({
       }
       throw new McpError(ErrorCode.InternalError, 'Failed to update project: No project returned');
     } catch (error: unknown) {
-      if (error instanceof McpError) {
-        throw error;
+      if (error instanceof McpError) throw error;
+
+      const err = error as Error;
+      if (isEntityError(err.message)) {
+        let availableEntitiesJson = '[]';
+        const msgLower = err.message.toLowerCase();
+
+        if (msgLower.includes('project') || msgLower.includes(id.toLowerCase())) {
+          availableEntitiesJson = await getAvailableProjectsJson(linearClient);
+        } else if (msgLower.includes('team')) {
+          availableEntitiesJson = await getAvailableTeamsJson(linearClient);
+        }
+        throw new Error(`${err.message}\nAvailable: ${availableEntitiesJson}`);
       }
-      const err = error as { message?: string };
+
       throw new McpError(
         ErrorCode.InternalError,
-        `Failed to update project: ${err.message || 'Unknown error'}`,
+        `Failed to update project '${id}': ${err.message || 'Unknown error'}`,
       );
     }
   },

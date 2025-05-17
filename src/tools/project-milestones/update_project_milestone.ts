@@ -1,6 +1,11 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import type { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
+import {
+  isEntityError,
+  getAvailableProjectMilestonesJson,
+  // getAvailableProjectsJson might be needed if errors relate to the project context
+} from '../shared/entity-error-handler.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { UpdateProjectMilestoneInputSchema } from './shared.js';
 
@@ -65,11 +70,21 @@ export const updateProjectMilestoneTool = defineTool({
         ],
       };
     } catch (error: unknown) {
-      if (error instanceof McpError) throw error;
+      if (error instanceof McpError) throw error; // Re-throw existing McpErrors
+
       const err = error as Error;
+      if (isEntityError(err.message)) {
+        // If it's a known entity error (e.g., "Milestone not found"),
+        // re-throw it as a standard Error. Providing a list of all milestones
+        // across all projects might not be feasible or useful here without a projectId.
+        // The error message from isEntityError should be descriptive.
+        throw new Error(err.message);
+      }
+
+      // Fallback for other errors
       throw new McpError(
         ErrorCode.InternalError,
-        `Failed to update project milestone: ${err.message || 'Unknown error'}`,
+        `Failed to update project milestone "${milestoneId}": ${err.message || 'Unknown error'}`,
       );
     }
   },

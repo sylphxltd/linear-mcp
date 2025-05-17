@@ -1,41 +1,35 @@
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
-import { defineTool } from '../shared/tool-definition.js';
-import { IssueCreateSchema } from './shared.js';
 import {
-  mapIssueToDetails,
-  validateAssignee,
-  validateLabels,
-  validateProject,
-  validateProjectMilestone,
-  validateState,
-  validateTeam,
-} from './shared.js';
+  getAvailableAssigneesJson,
+  getAvailableLabelsJson,
+  getAvailableProjectMilestonesJson,
+  getAvailableProjectsJson,
+  getAvailableStatesJson,
+  getAvailableTeamsJson,
+  isEntityError,
+} from '../shared/entity-error-handler.js';
+import { defineTool } from '../shared/tool-definition.js';
+import { IssueCreateSchema, mapIssueToDetails } from './shared.js';
 
 export const createIssueTool = defineTool({
   name: 'create_issue',
   description: 'Create a new Linear issue',
   inputSchema: IssueCreateSchema,
-  handler: async ({
-    title,
-    description,
-    teamId,
-    priority,
-    projectId,
-    stateId,
-    assigneeId,
-    labelIds,
-    dueDate,
-    projectMilestoneId,
-  }) => {
+  handler: async (input) => {
+    const {
+      title,
+      description,
+      teamId,
+      priority,
+      projectId,
+      stateId,
+      assigneeId,
+      labelIds,
+      dueDate,
+      projectMilestoneId,
+    } = input;
     const linearClient = getLinearClient();
-    await validateTeam(linearClient, teamId, 'creating issue');
-    if (projectId) await validateProject(linearClient, projectId, 'creating issue');
-    if (stateId) await validateState(linearClient, teamId, stateId, 'creating issue');
-    if (assigneeId) await validateAssignee(linearClient, assigneeId, 'creating issue');
-    if (labelIds && labelIds.length > 0)
-      await validateLabels(linearClient, teamId, labelIds, 'creating issue');
-    if (projectMilestoneId)
-      await validateProjectMilestone(linearClient, projectMilestoneId, projectId, 'creating issue');
 
     const payload = {
       title,
@@ -49,13 +43,42 @@ export const createIssueTool = defineTool({
       dueDate,
       projectMilestoneId,
     };
-    const issueCreate = await linearClient.createIssue(payload);
-    const newIssue = await issueCreate.issue;
-    if (!newIssue)
-      throw new Error(
-        `Failed to create issue or retrieve details. Sync ID: ${issueCreate.lastSyncId}`,
+
+    try {
+      const issueCreate = await linearClient.createIssue(payload);
+      const newIssue = await issueCreate.issue;
+      if (!newIssue) {
+        throw new Error(
+          `Failed to create issue or retrieve details. Sync ID: ${issueCreate.lastSyncId}`,
+        );
+      }
+      const detailedNewIssue = await mapIssueToDetails(newIssue, false);
+      return { content: [{ type: 'text', text: JSON.stringify(detailedNewIssue) }] };
+    } catch (error: unknown) {
+      const err = error as Error;
+      if (isEntityError(err.message)) {
+        let availableEntitiesJson = '[]';
+        // Determine context for fetching available entities
+        if (err.message.toLowerCase().includes('team')) {
+          availableEntitiesJson = await getAvailableTeamsJson(linearClient);
+        } else if (err.message.toLowerCase().includes('project id') || (projectId && err.message.toLowerCase().includes(projectId.toLowerCase()))) {
+          availableEntitiesJson = await getAvailableProjectsJson(linearClient);
+        } else if (err.message.toLowerCase().includes('state') || (stateId && err.message.toLowerCase().includes(stateId.toLowerCase()))) {
+          availableEntitiesJson = await getAvailableStatesJson(linearClient, { teamId });
+        } else if (err.message.toLowerCase().includes('assignee') || (assigneeId && err.message.toLowerCase().includes(assigneeId.toLowerCase()))) {
+          availableEntitiesJson = await getAvailableAssigneesJson(linearClient);
+        } else if (err.message.toLowerCase().includes('label') || (labelIds?.some(id => err.message.toLowerCase().includes(id.toLowerCase())))) {
+          availableEntitiesJson = await getAvailableLabelsJson(linearClient, { teamId });
+        } else if (err.message.toLowerCase().includes('milestone') || (projectMilestoneId && err.message.toLowerCase().includes(projectMilestoneId.toLowerCase()))) {
+          availableEntitiesJson = await getAvailableProjectMilestonesJson(linearClient, { projectId });
+        }
+        throw new Error(`${err.message}\nAvailable: ${availableEntitiesJson}`);
+      }
+      if (error instanceof McpError) throw error;
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to create issue: ${err.message || 'Unknown error'}`,
       );
-    const detailedNewIssue = await mapIssueToDetails(newIssue, false);
-    return { content: [{ type: 'text', text: JSON.stringify(detailedNewIssue) }] };
+    }
   },
 });

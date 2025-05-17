@@ -1,9 +1,12 @@
 import type { ProjectMilestone } from '@linear/sdk';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import {
+  isEntityError,
+  getAvailableProjectsJson,
+} from '../shared/entity-error-handler.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { ListProjectMilestonesInputSchema } from './shared.js';
-import { getAvailableProjectsJsonForError } from './shared.js';
 
 export const listProjectMilestonesTool = defineTool({
   name: 'list_project_milestones',
@@ -14,10 +17,12 @@ export const listProjectMilestonesTool = defineTool({
     try {
       const project = await linear.project(projectId);
       if (!project) {
-        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
+        // This specific check might be redundant if linear.project(projectId) throws an error
+        // that isEntityError can catch. However, keeping it for explicit "not found" before SDK call error.
+        const availableProjectsJson = await getAvailableProjectsJson(linear);
         throw new McpError(
           ErrorCode.InvalidParams,
-          `Project with ID "${projectId}" not found. Valid projects are: ${availableProjectsJson}`,
+          `Project with ID "${projectId}" not found when listing milestones. Valid projects are: ${availableProjectsJson}`,
         );
       }
       const milestonesResult = await project.projectMilestones();
@@ -63,21 +68,22 @@ export const listProjectMilestonesTool = defineTool({
         ],
       };
     } catch (error: unknown) {
-      if (error instanceof McpError) throw error;
+      if (error instanceof McpError) throw error; // Re-throw existing McpErrors
+
       const err = error as Error;
-      if (
-        err.message.toLowerCase().includes('not found') &&
-        err.message.toLowerCase().includes(projectId.toLowerCase())
-      ) {
-        const availableProjectsJson = await getAvailableProjectsJsonForError(linear);
-        throw new McpError(
-          ErrorCode.InvalidParams,
-          `Project with ID "${projectId}" not found when listing milestones. Valid projects are: ${availableProjectsJson}`,
-        );
+      if (isEntityError(err.message)) {
+        let availableEntitiesJson = '[]';
+        // Errors here are most likely due to an invalid projectId
+        if (err.message.toLowerCase().includes('project')) {
+          availableEntitiesJson = await getAvailableProjectsJson(linear);
+        }
+        throw new Error(`${err.message}\nAvailable: ${availableEntitiesJson}`);
       }
+
+      // Fallback for other errors
       throw new McpError(
         ErrorCode.InternalError,
-        `Failed to list project milestones: ${err.message || 'Unknown error'}`,
+        `Failed to list project milestones for project ID "${projectId}": ${err.message || 'Unknown error'}`,
       );
     }
   },

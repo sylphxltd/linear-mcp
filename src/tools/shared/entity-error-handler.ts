@@ -55,9 +55,10 @@ export async function getAvailableProjectsJson(linearClient: any): Promise<strin
 
 export async function getAvailableStatesJson(
   linearClient: any,
-  teamId: string,
+  context: { teamId?: string },
 ): Promise<string> {
-  if (!teamId) return `"(Cannot fetch states without a valid teamId.)"`;
+  const teamId = context?.teamId;
+  if (!teamId) return `"(Cannot fetch states without a valid teamId in context.)"`;
   try {
     const team = await linearClient.team(teamId);
     if (!team)
@@ -90,9 +91,10 @@ export async function getAvailableAssigneesJson(linearClient: any): Promise<stri
 
 export async function getAvailableLabelsJson(
   linearClient: any,
-  teamId: string,
+  context: { teamId?: string },
 ): Promise<string> {
-  if (!teamId) return `"(Cannot fetch labels without a valid teamId.)"`;
+  const teamId = context?.teamId;
+  if (!teamId) return `"(Cannot fetch labels without a valid teamId in context.)"`;
   try {
     const team = await linearClient.team(teamId);
     if (!team)
@@ -111,8 +113,9 @@ export async function getAvailableLabelsJson(
 
 export async function getAvailableProjectMilestonesJson(
   linearClient: any,
-  projectId?: string,
+  context?: { projectId?: string },
 ): Promise<string> {
+  const projectId = context?.projectId;
   try {
     if (projectId && projectId !== 'any' && projectId.trim() !== '') {
       const project = await linearClient.project(projectId);

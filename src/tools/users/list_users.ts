@@ -1,5 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
+import { isEntityError } from '../shared/entity-error-handler.js';
 import { defineTool } from '../shared/tool-definition.js';
 
 export const listUsersTool = defineTool({
@@ -42,7 +43,11 @@ export const listUsersTool = defineTool({
         ],
       };
     } catch (error: unknown) {
-      const err = error as { message?: string };
+      if (error instanceof McpError) throw error;
+      const err = error as Error;
+      if (isEntityError(err.message)) {
+        throw new Error(err.message);
+      }
       throw new McpError(
         ErrorCode.InternalError,
         `Failed to list users: ${err.message || 'Unknown error'}`,
