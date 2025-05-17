@@ -2,32 +2,54 @@
  * Shared error handler for entity-related errors (projectId, teamId, teamIds, labelIds, etc).
  */
 
-const ENTITY_ERROR_PATTERNS = [
-  /^Argument Validation Error - projectId must be a UUID.*$/,
-  /^Argument Validation Error - each value in teamIds must be a UUID.*$/,
-  /^Entity not found: Project - Could not find referenced Project.*$/,
-  /^Entity not found: Team - Could not find referenced Team.*$/,
-  /^Entity not found: Team: teamIds contained an entry that could not be found.*$/,
-  /^Argument Validation Error - each value in labelIds must be a UUID.*$/,
+const RELEVANT_ENTITY_FIELDS = [
+  'projectId',
+  'teamIds',
+  'Project',
+  'Team',
+  'stateId',
+  'assigneeId',
+  'labelId',
+  'labelIds',
+  'projectMilestoneId',
+  'projectMilestone',
 ];
 
 /**
- * Shared error handler for entity-related errors (projectId, teamId, teamIds, labelIds, etc).
+ * Checks if an error message is related to a specific entity or field that we care about.
+ * This is a more dynamic check than matching the full error message.
  */
 export function isEntityError(message: string): boolean {
   if (!message) {
     return false;
   }
 
-  for (const pattern of ENTITY_ERROR_PATTERNS) {
-    if (pattern.test(message)) {
-      return true;
-    }
+  // Regex to capture potential entity/field names following core error keywords.
+  // It looks for "Argument Validation Error" or "Entity not found",
+  // followed by any characters (non-greedily), and then captures one of the
+  // RELEVANT_ENTITY_FIELDS (case-insensitive), followed by a non-word character or end of string.
+  const entityNameRegex = /(?:Argument Validation Error|Entity not found).*?(projectId|teamIds|Project|Team|stateId|assigneeId|labelId|labelIds|projectMilestoneId|projectMilestone)(?:[\s:.-]|$)/i;
+
+  const match = message.match(entityNameRegex);
+
+  if (!match || !match[1]) {
+    // No core keyword pattern found or no relevant entity/field name captured
+    return false;
   }
-  return false;
+
+  // The captured group [1] contains the matched entity/field name
+  const extractedName = match[1].toLowerCase();
+
+  // Check if the extracted name is in the list of relevant entity fields (case-insensitive)
+  // This check is technically redundant because the regex already ensures the captured
+  // name is one of the RELEVANT_ENTITY_FIELDS, but keeping it for clarity and
+  // explicit adherence to the "check if extracted name is in the list" step.
+  const isRelevantEntityField = RELEVANT_ENTITY_FIELDS.some(field => field.toLowerCase() === extractedName);
+
+  return isRelevantEntityField;
 }
 
-// --- Available list helpers (moved from issues/shared.ts) ---
+// --- Available list helpers ---
 
 export async function getAvailableTeamsJson(linearClient: any): Promise<string> {
   try {
