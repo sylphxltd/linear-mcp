@@ -2,65 +2,167 @@ import { describe, it, expect } from 'vitest';
 import { parseLinearError } from './linear-error-parser.js';
 
 describe('parseLinearError', () => {
-  it('should return EntityNotFoundErrorDetails for a known entity not found error pattern', () => {
-    const mockLinearError = {
-      message: 'GraphQL Error (Code: 422): {"data":null,"errors":[{"message":"Project with id \\"test-project-id\\" was not found","path":["projectUpdate"],"locations":[{"line":2,"column":3}],"extensions":{"code":"INVALID_INPUT","userPresentableMessage":"Project with id \\"test-project-id\\" was not found","serviceName":"api","type":"RecordNotFound"}}]}',
-      errors: [
-        {
-          message: 'Project with id "test-project-id" was not found',
-          extensions: {
-            code: 'INVALID_INPUT',
-            userPresentableMessage: 'Project with id "test-project-id" was not found',
-            serviceName: 'api',
-            type: 'RecordNotFound',
-            // Hypothetical structure, actual Linear errors might differ
-            // We need to inspect actual errors to refine this.
-            // For now, we assume some way to get fieldName.
-            // Let's assume the error message or path implies the field.
-            // For "projectUpdate" and "Project with id", fieldName might be "projectId"
-          },
-          path: ['projectUpdate'], // This might indicate the operation, not the field directly
+  const createMockLinearError = (userPresentableMessage: string, type = 'RecordNotFound', path = ['someMutation']) => ({
+    message: `GraphQL Error (Code: 422): {"data":null,"errors":[{"message":"${userPresentableMessage.replace(/"/g, '\\"')}", "path":["${path.join('","')}"],"locations":[{"line":2,"column":3}],"extensions":{"code":"INVALID_INPUT","userPresentableMessage":"${userPresentableMessage.replace(/"/g, '\\"')}","serviceName":"api","type":"${type}"}}]}`,
+    errors: [
+      {
+        message: userPresentableMessage,
+        extensions: {
+          code: 'INVALID_INPUT',
+          userPresentableMessage,
+          serviceName: 'api',
+          type,
         },
-      ],
-      // It's common for SDKs to wrap the raw error, so we might have nested structures.
-      // The actual structure of the error from the Linear SDK needs to be known.
-      // For now, this is a placeholder.
-      // Let's assume the relevant info is in `errors[0].extensions` or `errors[0].message`.
-    };
-
-    // This test is designed to fail initially.
-    // We need to determine how to extract entityName and fieldName.
-    // Based on "Project with id..." -> entityName: 'Project'
-    // Based on "projectUpdate" and "Project with id..." -> fieldName: 'projectId' (assumption)
-    const expectedDetails = {
-      type: 'EntityNotFound',
-      entityName: 'Project',
-      fieldName: 'projectId', // This is an assumption for now
-      invalidId: 'test-project-id',
-    };
-
-    expect(parseLinearError(mockLinearError)).toEqual(expectedDetails);
+        path,
+      },
+    ],
   });
 
-  it('should return null for an error that is not an entity not found error', () => {
-    const mockNonEntityError = {
-      message: 'GraphQL Error (Code: 500): Internal Server Error',
-      errors: [
-        {
-          message: 'Internal Server Error',
-          extensions: {
-            code: 'SERVER_ERROR',
-            serviceName: 'api',
-          },
-        },
-      ],
-    };
+  describe('Pattern 1: "{EntityName} with id \\"{invalidId}\\" was not found"', () => {
+    it('should parse Project not found error', () => {
+      const error = createMockLinearError('Project with id "test-project-id" was not found');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'Project',
+        fieldName: 'projectId',
+        invalidId: 'test-project-id',
+      });
+    });
+
+    it('should parse Team not found error', () => {
+      const error = createMockLinearError('Team with id "team-123" was not found');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'Team',
+        fieldName: 'teamId',
+        invalidId: 'team-123',
+      });
+    });
+
+    it('should parse User not found error', () => {
+      const error = createMockLinearError('User with id "user-abc" was not found');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'User',
+        fieldName: 'userId',
+        invalidId: 'user-abc',
+      });
+    });
+
+    it('should parse IssueLabel not found error', () => {
+      const error = createMockLinearError('IssueLabel with id "label-def" was not found');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'IssueLabel',
+        fieldName: 'issueLabelId',
+        invalidId: 'label-def',
+      });
+    });
+
+    it('should parse WorkflowState not found error', () => {
+      const error = createMockLinearError('WorkflowState with id "state-ghi" was not found');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'WorkflowState',
+        fieldName: 'workflowStateId',
+        invalidId: 'state-ghi',
+      });
+    });
+
+    it('should parse ProjectMilestone not found error', () => {
+      const error = createMockLinearError('ProjectMilestone with id "milestone-jkl" was not found');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'ProjectMilestone',
+        fieldName: 'projectMilestoneId',
+        invalidId: 'milestone-jkl',
+      });
+    });
+  });
+
+  describe('Pattern 2: "Entity not found: {EntityName} - Could not find referenced {EntityName}."', () => {
+    it('should parse generic Project not found error', () => {
+      const error = createMockLinearError('Entity not found: Project - Could not find referenced Project.');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'Project',
+        fieldName: 'projectId', // Inferred
+        invalidId: undefined,
+      });
+    });
+
+    it('should parse generic Team not found error', () => {
+      const error = createMockLinearError('Entity not found: Team - Could not find referenced Team.');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'Team',
+        fieldName: 'teamId', // Inferred
+        invalidId: undefined,
+      });
+    });
+     it('should parse generic User not found error', () => {
+      const error = createMockLinearError('Entity not found: User - Could not find referenced User.');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'User',
+        fieldName: 'userId', // Inferred
+        invalidId: undefined,
+      });
+    });
+  });
+
+  describe('Pattern 3: "Entity not found: {EntityName}: {fieldName} contained an entry that could not be found."', () => {
+    it('should parse Team list field error', () => {
+      const error = createMockLinearError('Entity not found: Team: teamIds contained an entry that could not be found.');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'Team',
+        fieldName: 'teamIds',
+        invalidId: undefined,
+      });
+    });
+
+    it('should parse IssueLabel list field error', () => {
+      const error = createMockLinearError('Entity not found: IssueLabel: labelIds contained an entry that could not be found.');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'IssueLabel',
+        fieldName: 'labelIds',
+        invalidId: undefined,
+      });
+    });
+     it('should parse Project list field error (hypothetical)', () => {
+      const error = createMockLinearError('Entity not found: Project: projectIds contained an entry that could not be found.');
+      expect(parseLinearError(error)).toEqual({
+        type: 'EntityNotFound',
+        entityName: 'Project',
+        fieldName: 'projectIds',
+        invalidId: undefined,
+      });
+    });
+  });
+
+
+  it('should return null for an error that is not an entity not found error (e.g. wrong type)', () => {
+    const mockNonEntityError = createMockLinearError('Some other error', 'SOME_OTHER_TYPE');
     expect(parseLinearError(mockNonEntityError)).toBeNull();
   });
 
-  // Add more test cases:
-  // - Different entity types (Team, IssueStatus, User, etc.)
-  // - Different error message patterns if they vary
-  // - Errors where invalidId might not be present or easily extractable
-  // - Errors where fieldName is harder to determine
+  it('should return null for an error that is RecordNotFound but does not match known patterns', () => {
+    const mockNonEntityError = createMockLinearError('Unparseable record not found error message');
+    expect(parseLinearError(mockNonEntityError)).toBeNull();
+  });
+  
+  it('should return null if error.errors is not an array or is empty', () => {
+    expect(parseLinearError({ message: 'Some error' })).toBeNull();
+    expect(parseLinearError({ message: 'Some error', errors: [] })).toBeNull();
+    expect(parseLinearError({ message: 'Some error', errors: {} })).toBeNull();
+  });
+
+  it('should return null if firstError or extensions are missing', () => {
+    const malformedError1 = { errors: [{ message: 'Missing extensions' }] };
+    expect(parseLinearError(malformedError1)).toBeNull();
+    const malformedError2 = { errors: [{ extensions: { userPresentableMessage: null, type: 'RecordNotFound' } }] };
+     expect(parseLinearError(malformedError2)).toBeNull();
+  });
 });
