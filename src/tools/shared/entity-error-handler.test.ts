@@ -9,6 +9,13 @@ describe('isEntityError', () => {
     'Entity not found: Team - Could not find referenced Team.',
     'Entity not found: Team: teamIds contained an entry that could not be found.',
     'Argument Validation Error - each value in labelIds must be a UUID.',
+    // New test cases for flexible patterns
+    'Argument Validation Error - projectId must be a UUID. Additional info here.',
+    'Argument Validation Error - each value in teamIds must be a UUID (details).',
+    'Entity not found: Project - Could not find referenced Project. Check ID.',
+    'Entity not found: Team - Could not find referenced Team. User ID: 123.',
+    'Entity not found: Team: teamIds contained an entry that could not be found. Error code 404.',
+    'Argument Validation Error - each value in labelIds must be a UUID - invalid format.',
   ];
 
   const nonErrorMessages = [

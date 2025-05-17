@@ -3,12 +3,12 @@
  */
 
 const ENTITY_ERROR_PATTERNS = [
-  /^Argument Validation Error - projectId must be a UUID\.$/,
-  /^Argument Validation Error - each value in teamIds must be a UUID\.$/,
-  /^Entity not found: Project - Could not find referenced Project\.$/,
-  /^Entity not found: Team - Could not find referenced Team\.$/,
-  /^Entity not found: Team: teamIds contained an entry that could not be found\.$/,
-  /^Argument Validation Error - each value in labelIds must be a UUID\.$/,
+  /^Argument Validation Error - projectId must be a UUID.*$/,
+  /^Argument Validation Error - each value in teamIds must be a UUID.*$/,
+  /^Entity not found: Project - Could not find referenced Project.*$/,
+  /^Entity not found: Team - Could not find referenced Team.*$/,
+  /^Entity not found: Team: teamIds contained an entry that could not be found.*$/,
+  /^Argument Validation Error - each value in labelIds must be a UUID.*$/,
 ];
 
 /**
