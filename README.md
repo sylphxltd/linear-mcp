@@ -121,3 +121,11 @@ Configure your MCP host (e.g., `mcp_settings.json`) to use npx:
 ## License
 
 ISC
+## Issues Module Structure (Refactored for Modularity)
+
+- [`schemas.ts`](src/tools/issues/schemas.ts): Zod schemas for validation.
+- [`types.ts`](src/tools/issues/types.ts): TypeScript types and interfaces.
+- [`mappers.ts`](src/tools/issues/mappers.ts): Mapping/business logic functions.
+- Operation files (e.g., [`create_issue.ts`](src/tools/issues/create_issue.ts), [`update_issue.ts`](src/tools/issues/update_issue.ts)) import only what they need from these modules.
+
+This structure ensures clear separation of concerns, minimal dependencies, and improved maintainability.

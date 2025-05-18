@@ -1,7 +1,8 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IssueFilterSchema } from './shared.js';
-import { type IssueFilters, mapIssueToDetails } from './shared.js';
+import { IssueFilterSchema } from './schemas.js';
+import { type IssueFilters } from './types.js';
+import { mapIssueToDetails } from './mappers.js';
 function buildIssueFilters({
   query,
   teamId,
@@ -20,8 +21,8 @@ function buildIssueFilters({
   projectId?: string;
   includeArchived?: boolean;
   limit?: number;
-}): import('./shared.js').IssueFilters {
-  const filters: import('./shared.js').IssueFilters = { includeArchived, first: limit };
+}): import('./types.js').IssueFilters {
+  const filters: import('./types.js').IssueFilters = { includeArchived, first: limit };
   if (query) {
     filters.filter = {
       ...(filters.filter || {}),

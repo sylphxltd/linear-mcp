@@ -2,8 +2,8 @@ import type { LinearClient } from '@linear/sdk';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IssueUpdateSchema } from './shared.js';
-import { mapIssueToDetails } from './shared.js';
+import { IssueUpdateSchema } from './schemas.js';
+import { mapIssueToDetails } from './mappers.js';
 
 export const updateIssueTool = defineTool({
   name: 'update_issue',

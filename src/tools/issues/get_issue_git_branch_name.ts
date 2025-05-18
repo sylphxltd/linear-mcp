@@ -1,6 +1,6 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IdSchema } from './shared.js';
+import { IdSchema } from './schemas.js';
 
 export const getIssueGitBranchNameTool = defineTool({
   name: 'get_issue_git_branch_name',

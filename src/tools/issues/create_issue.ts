@@ -1,7 +1,7 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IssueCreateSchema } from './shared.js';
-import { mapIssueToDetails } from './shared.js';
+import { IssueCreateSchema } from './schemas.js';
+import { mapIssueToDetails } from './mappers.js';
 
 export const createIssueTool = defineTool({
   name: 'create_issue',
