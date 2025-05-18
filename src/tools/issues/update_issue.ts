@@ -2,7 +2,25 @@ import type { LinearClient } from '@linear/sdk';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IssueUpdateSchema } from './shared.js';
+import { z } from 'zod';
+// IssueUpdateSchema is now defined locally
+const IssueUpdateSchema = {
+  id: z.string().describe('The UUID of the issue to update'),
+  title: z.string().optional().describe('The title of the issue'),
+  description: z.string().optional().describe('The description of the issue in Markdown'),
+  priority: z.number().optional().describe('The priority of the issue. 0 = No priority, 1 = Urgent, 2 = High, 3 = Normal, 4 = Low.'),
+  teamId: z.string().optional().describe('The identifier of the team associated with the issue'),
+  assigneeId: z.string().optional().describe('The UUID of the assignee to assign the issue to'),
+  projectId: z.string().optional().describe('The UUID of the project to add the issue to'),
+  projectMilestoneId: z.string().uuid('Invalid project milestone ID').nullable().optional().describe('The UUID of the project milestone to associate the issue with (null to remove)'),
+  stateId: z.string().optional().describe('The UUID of the workflow state to set for the issue'),
+  labelIds: z.array(z.string()).optional().describe('Array of label UUIDs to set on the issue'),
+  parentId: z.string().optional().describe('The identifier of the parent issue'),
+  subscriberIds: z.array(z.string()).optional().describe('The identifiers of the users subscribing to this ticket'),
+  estimate: z.number().optional().describe('The estimated complexity of the issue'),
+  dueDate: z.string().optional().describe('The due date for the issue in ISO format'),
+  cycleId: z.string().optional().describe('The cycle associated with the issue'),
+};
 import { mapIssueToDetails } from './shared.js';
 
 export const updateIssueTool = defineTool({

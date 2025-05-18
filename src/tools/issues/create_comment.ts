@@ -1,6 +1,12 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { CommentCreateSchema } from './shared.js';
+import { z } from 'zod';
+import { mapCommentToOutput } from './shared.js';
+// CommentCreateSchema is now defined locally
+const CommentCreateSchema = {
+  issueId: z.string().describe('The UUID of the issue to add the comment to'),
+  body: z.string().describe('The content of the comment in Markdown'),
+};
 
 export const createCommentTool = defineTool({
   name: 'create_comment',
@@ -22,13 +28,7 @@ export const createCommentTool = defineTool({
       content: [
         {
           type: 'text',
-          text: JSON.stringify({
-            id: newComment.id,
-            body: newComment.body,
-            createdAt: newComment.createdAt,
-            updatedAt: newComment.updatedAt,
-            userId: newComment.userId,
-          }),
+          text: JSON.stringify(mapCommentToOutput(newComment)),
         },
       ],
     };

@@ -1,6 +1,6 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IdSchema } from './shared.js';
+import { IdSchema, mapIssueToGitBranch } from './shared.js';
 
 export const getIssueGitBranchNameTool = defineTool({
   name: 'get_issue_git_branch_name',
@@ -12,17 +12,12 @@ export const getIssueGitBranchNameTool = defineTool({
     if (!issue) {
       throw new Error(`Issue with ID '${id}' not found.`);
     }
-    const branchName = await issue.branchName;
+    const gitBranchInfo = await mapIssueToGitBranch(issue);
     return {
       content: [
         {
           type: 'text',
-          text: JSON.stringify({
-            id: issue.id,
-            identifier: issue.identifier,
-            title: issue.title,
-            branchName,
-          }),
+          text: JSON.stringify(gitBranchInfo),
         },
       ],
     };

@@ -28,65 +28,23 @@ export const PaginationSchema = {
 };
 
 // --- Issue schemas (local copy) ---
-export const IssueFilterSchema = {
-  query: z.string().optional().describe('An optional search query'),
-  teamId: z.string().optional().describe('The team UUID'),
-  stateId: z.string().optional().describe('The state UUID'),
-  assigneeId: z.string().optional().describe('The assignee UUID'),
-  projectMilestoneId: z
-    .string()
-    .uuid('Invalid project milestone ID')
-    .optional()
-    .describe('The project milestone ID to filter by'),
-  includeArchived: z.boolean().default(true).describe('Whether to include archived issues'),
-  limit: z.number().default(50).describe('The number of issues to return'),
-  projectId: z.string().optional().describe('The project ID to filter by'),
-};
-export const IssueCreateSchema = {
-  title: z.string().describe('The issue title'),
-  description: z.string().optional().describe('The issue description as Markdown'),
-  teamId: z.string().describe('The team UUID'),
-  priority: z
-    .number()
-    .optional()
-    .describe('The issue priority. 0 = No priority, 1 = Urgent, 2 = High, 3 = Normal, 4 = Low.'),
-  projectId: z.string().optional().describe('The project ID to add the issue to'),
-  stateId: z.string().optional().describe('The issue state ID'),
-  assigneeId: z.string().optional().describe('The assignee ID'),
-  labelIds: z.array(z.string()).optional().describe('Array of label IDs to set on the issue'),
-  dueDate: z.string().optional().describe('The due date for the issue in ISO format'),
-  projectMilestoneId: z
-    .string()
-    .uuid('Invalid project milestone ID')
-    .optional()
-    .describe('The project milestone ID to associate the issue with'),
-};
-export const IssueUpdateSchema = {
-  id: z.string().describe('The issue ID'),
-  title: z.string().optional().describe('The issue title'),
-  description: z.string().optional().describe('The issue description as Markdown'),
-  priority: z
-    .number()
-    .optional()
-    .describe('The issue priority. 0 = No priority, 1 = Urgent, 2 = High, 3 = Normal, 4 = Low.'),
-  projectId: z.string().optional().describe('The project ID to add the issue to'),
-  stateId: z.string().optional().describe('The issue state ID'),
-  assigneeId: z.string().optional().describe('The assignee ID'),
-  labelIds: z.array(z.string()).optional().describe('Array of label IDs to set on the issue'),
-  dueDate: z.string().optional().describe('The due date for the issue in ISO format'),
-  projectMilestoneId: z
-    .string()
-    .uuid('Invalid project milestone ID')
-    .nullable()
-    .optional()
-    .describe('The project milestone ID to associate the issue with (null to remove)'),
-};
-export const CommentCreateSchema = {
-  issueId: z.string().describe('The issue ID'),
-  body: z.string().describe('The content of the comment as Markdown'),
-};
 
 // --- Shared types ---
+export interface CommentOutput {
+  id: string;
+  body: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+}
+
+export interface IssueGitBranchOutput {
+  id: string;
+  identifier: string;
+  title: string;
+  branchName: string;
+}
+
 export interface SimplifiedIssueDetails {
   id: string;
   identifier: string;
@@ -115,13 +73,19 @@ export interface SimplifiedIssueDetails {
 }
 
 export type IssueFilters = {
-  filter?: Record<string, unknown>;
+  // Core filters
+  filter?: Record<string, unknown>; // For complex query filters
   teamId?: string;
-  stateId?: string;
   assigneeId?: string;
+  stateId?: string;
+  
+  // Project-related filters
   projectId?: string;
-  includeArchived?: boolean;
+  projectMilestoneId?: string;
+
+  // Pagination and display
   first?: number;
+  includeArchived?: boolean;
 };
 
 // --- Mapping ---
@@ -170,5 +134,26 @@ export async function mapIssueToDetails(
     createdAt: issue.createdAt,
     updatedAt: issue.updatedAt,
     url: issue.url,
+  };
+}
+
+// --- Comment mappers ---
+export function mapCommentToOutput(comment: any): CommentOutput {
+  return {
+    id: comment.id,
+    body: comment.body,
+    createdAt: comment.createdAt.toISOString(),
+    updatedAt: comment.updatedAt.toISOString(),
+    userId: comment.userId,
+  };
+}
+
+// --- Git branch mappers ---
+export async function mapIssueToGitBranch(issue: Issue): Promise<IssueGitBranchOutput> {
+  return {
+    id: issue.id,
+    identifier: issue.identifier,
+    title: issue.title,
+    branchName: await issue.branchName,
   };
 }

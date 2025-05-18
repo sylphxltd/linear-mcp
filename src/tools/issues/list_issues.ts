@@ -1,6 +1,22 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IssueFilterSchema } from './shared.js';
+import { z } from 'zod';
+// IssueFilterSchema is now defined locally
+const IssueFilterSchema = {
+  // Core filters
+  query: z.string().optional().describe('Search in title and description'),
+  teamId: z.string().optional().describe('Filter by team UUID'),
+  assigneeId: z.string().optional().describe('Filter by assignee UUID'),
+  stateId: z.string().optional().describe('Filter by workflow state UUID'),
+  
+  // Project-related filters
+  projectId: z.string().optional().describe('Filter by project UUID'),
+  projectMilestoneId: z.string().uuid('Invalid project milestone ID').optional().describe('Filter by project milestone UUID'),
+  
+  // Pagination and display
+  limit: z.number().default(50).describe('Number of issues to return'),
+  includeArchived: z.boolean().default(false).describe('Include archived issues'),
+};
 import { type IssueFilters, mapIssueToDetails } from './shared.js';
 function buildIssueFilters({
   query,
@@ -20,8 +36,8 @@ function buildIssueFilters({
   projectId?: string;
   includeArchived?: boolean;
   limit?: number;
-}): import('./shared.js').IssueFilters {
-  const filters: import('./shared.js').IssueFilters = { includeArchived, first: limit };
+}): IssueFilters {
+  const filters: IssueFilters = { includeArchived, first: limit };
   if (query) {
     filters.filter = {
       ...(filters.filter || {}),
