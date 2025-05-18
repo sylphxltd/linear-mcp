@@ -49,7 +49,7 @@ export interface CommentOutput {
   body: string;
   createdAt: string;
   updatedAt: string;
-  userId: string;
+  userId: string | null;
 }
 
 export interface IssueGitBranchOutput {
@@ -151,7 +151,7 @@ export async function mapIssueToDetails(
   };
 }
 
-export async function mapToMyIssueOutput(issue: any): Promise<MyIssueOutput> {
+export async function mapToMyIssueOutput(issue: Issue): Promise<MyIssueOutput> {
   const state = issue.state ? await issue.state : null;
   const team = issue.team ? await issue.team : null;
   const cycle = issue.cycle ? await issue.cycle : null;
@@ -172,13 +172,15 @@ export async function mapToMyIssueOutput(issue: any): Promise<MyIssueOutput> {
 }
 
 // --- Comment mappers ---
-export function mapCommentToOutput(comment: any): CommentOutput {
+import type { Comment } from '@linear/sdk';
+
+export function mapCommentToOutput(comment: Comment): CommentOutput {
   return {
     id: comment.id,
     body: comment.body,
     createdAt: comment.createdAt.toISOString(),
     updatedAt: comment.updatedAt.toISOString(),
-    userId: comment.userId,
+    userId: comment.userId ?? null,
   };
 }
 
