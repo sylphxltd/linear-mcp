@@ -1,29 +1,13 @@
-import type { ProjectMilestone } from '@linear/sdk';
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-// --- Project Milestone schemas (localized) ---
-export const ListProjectMilestonesInputSchema = z.object({
+import type { ProjectMilestone } from '@linear/sdk';
+import { mapMilestoneToOutput, getAvailableProjectsJsonForError } from './shared.js';
+
+const ListProjectMilestonesInputSchema = z.object({
   projectId: z.string().uuid('Invalid project ID'),
 });
-// Helper function to get available projects for error messages
-import type { LinearClient } from '@linear/sdk';
-export async function getAvailableProjectsJsonForError(
-  linearClient: LinearClient,
-): Promise<string> {
-  try {
-    const projects = await linearClient.projects();
-    if (!projects.nodes || projects.nodes.length === 0) {
-      return '[]';
-    }
-    const projectList = projects.nodes.map((p) => ({ id: p.id, name: p.name }));
-    return JSON.stringify(projectList, null, 2);
-  } catch (e) {
-    const error = e as Error;
-    return `(Could not fetch available projects for context: ${error.message})`;
-  }
-}
 
 export const listProjectMilestonesTool = defineTool({
   name: 'list_project_milestones',
@@ -70,14 +54,7 @@ export const listProjectMilestonesTool = defineTool({
           {
             type: 'text',
             text: JSON.stringify(
-              resultNodes.map((m) => ({
-                id: m.id,
-                name: m.name,
-                description: m.description,
-                targetDate: m.targetDate,
-                sortOrder: m.sortOrder,
-                projectId: m.projectId,
-              })),
+              resultNodes.map(mapMilestoneToOutput),
             ),
           },
         ],

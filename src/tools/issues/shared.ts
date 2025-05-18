@@ -30,6 +30,20 @@ export const PaginationSchema = {
 // --- Issue schemas (local copy) ---
 
 // --- Shared types ---
+export interface MyIssueOutput {
+  id: string;
+  identifier: string;
+  title: string;
+  description: string | null;
+  priority: number;
+  state: string | null;
+  team: string | null;
+  cycleName: string | null;
+  createdAt: string;
+  updatedAt: string;
+  url: string;
+}
+
 export interface CommentOutput {
   id: string;
   body: string;
@@ -133,6 +147,26 @@ export async function mapIssueToDetails(
         : undefined,
     createdAt: issue.createdAt,
     updatedAt: issue.updatedAt,
+    url: issue.url,
+  };
+}
+
+export async function mapToMyIssueOutput(issue: any): Promise<MyIssueOutput> {
+  const state = issue.state ? await issue.state : null;
+  const team = issue.team ? await issue.team : null;
+  const cycle = issue.cycle ? await issue.cycle : null;
+
+  return {
+    id: issue.id,
+    identifier: issue.identifier,
+    title: issue.title,
+    description: issue.description ?? null,
+    priority: issue.priority,
+    state: state?.name ?? null,
+    team: team?.name ?? null,
+    cycleName: cycle?.name ?? null,
+    createdAt: issue.createdAt.toISOString(),
+    updatedAt: issue.updatedAt.toISOString(),
     url: issue.url,
   };
 }

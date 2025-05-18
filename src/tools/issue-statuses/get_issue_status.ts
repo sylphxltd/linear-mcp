@@ -1,7 +1,12 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IssueStatusQuerySchema } from './shared.js';
-import { throwInternalError } from './shared.js';
+import { z } from 'zod';
+import { throwInternalError, mapIssueStatusToOutput } from './shared.js';
+
+const IssueStatusQuerySchema = {
+  query: z.string().describe('The UUID or name of the issue status to retrieve'),
+  teamId: z.string().describe('The UUID of the team to search for the issue status in'),
+};
 
 export const getIssueStatusTool = defineTool({
   name: 'get_issue_status',
@@ -24,14 +29,7 @@ export const getIssueStatusTool = defineTool({
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                id: state.id,
-                name: state.name,
-                color: state.color,
-                type: state.type,
-                description: state.description,
-                position: state.position,
-              }),
+              text: JSON.stringify(mapIssueStatusToOutput(state)),
             },
           ],
         };

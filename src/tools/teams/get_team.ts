@@ -2,8 +2,9 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-// --- Team schema (localized) ---
-export const TeamQuerySchema = {
+import { mapTeamToOutput, getAvailableTeamsMessage } from './shared.js';
+
+const TeamQuerySchema = {
   query: z.string().describe('The UUID or name of the team to retrieve'),
 };
 
@@ -20,16 +21,7 @@ export const getTeamTool = defineTool({
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                id: team.id,
-                name: team.name,
-                key: team.key,
-                description: team.description,
-                color: team.color,
-                icon: team.icon,
-                createdAt: team.createdAt,
-                updatedAt: team.updatedAt,
-              }),
+              text: JSON.stringify(mapTeamToOutput(team)),
             },
           ],
         };
@@ -49,16 +41,7 @@ export const getTeamTool = defineTool({
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                id: team.id,
-                name: team.name,
-                key: team.key,
-                description: team.description,
-                color: team.color,
-                icon: team.icon,
-                createdAt: team.createdAt,
-                updatedAt: team.updatedAt,
-              }),
+              text: JSON.stringify(mapTeamToOutput(team)),
             },
           ],
         };
@@ -70,24 +53,11 @@ export const getTeamTool = defineTool({
         `Failed to get team: ${err.message || 'Unknown error'}`,
       );
     }
-    // If team not found by ID, name, or key, fetch all teams and include in error message
-    try {
-      const allTeams = await linearClient.teams();
-      const validTeams = allTeams.nodes.map((team) => ({
-        id: team.id,
-        name: team.name,
-      }));
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Team with query "${query}" not found. Valid teams are: ${JSON.stringify(validTeams, null, 2)}`,
-      );
-    } catch (listError: unknown) {
-      const err = listError as { message?: string };
-      // If listing teams also fails, throw a generic not found error
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Team with query "${query}" not found. Also failed to list available teams: ${err.message || 'Unknown error'}`,
-      );
-    }
+    // If team not found by ID, name, or key, include available teams in error message
+    const availableTeamsMessage = await getAvailableTeamsMessage(linearClient);
+    throw new McpError(
+      ErrorCode.InvalidParams,
+      `Team with query "${query}" not found.${availableTeamsMessage}`,
+    );
   },
 });

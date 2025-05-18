@@ -1,8 +1,12 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { LabelListSchema } from './shared.js';
-import { formatLabelNodes, getAvailableTeamsMessage } from './shared.js';
+import { z } from 'zod';
+// LabelListSchema is now defined locally
+const LabelListSchema = {
+  teamId: z.string().describe('The UUID of the team to retrieve labels for'),
+};
+import { mapLabelToOutput, getAvailableTeamsMessage } from './shared.js';
 
 export const listIssueLabelsTool = defineTool({
   name: 'list_issue_labels',
@@ -24,7 +28,7 @@ export const listIssueLabelsTool = defineTool({
         content: [
           {
             type: 'text',
-            text: JSON.stringify(formatLabelNodes(labels.nodes)),
+            text: JSON.stringify(labels.nodes.map(mapLabelToOutput)),
           },
         ],
       };

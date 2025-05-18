@@ -2,30 +2,14 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-// --- Project Milestone schemas (localized) ---
-export const CreateProjectMilestoneInputSchema = z.object({
+import { mapMilestoneToOutput, getAvailableProjectsJsonForError } from './shared.js';
+
+const CreateProjectMilestoneInputSchema = z.object({
   projectId: z.string().uuid('Invalid project ID'),
   name: z.string().min(1, 'Milestone name cannot be empty'),
   description: z.string().optional(),
   targetDate: z.string().datetime({ message: 'Invalid ISO date string for targetDate' }).optional(),
 });
-// Helper function to get available projects for error messages
-import type { LinearClient } from '@linear/sdk';
-export async function getAvailableProjectsJsonForError(
-  linearClient: LinearClient,
-): Promise<string> {
-  try {
-    const projects = await linearClient.projects();
-    if (!projects.nodes || projects.nodes.length === 0) {
-      return '[]';
-    }
-    const projectList = projects.nodes.map((p) => ({ id: p.id, name: p.name }));
-    return JSON.stringify(projectList, null, 2);
-  } catch (e) {
-    const error = e as Error;
-    return `(Could not fetch available projects for context: ${error.message})`;
-  }
-}
 
 export const createProjectMilestoneTool = defineTool({
   name: 'create_project_milestone',
@@ -73,14 +57,7 @@ export const createProjectMilestoneTool = defineTool({
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              id: createdMilestone.id,
-              name: createdMilestone.name,
-              description: createdMilestone.description,
-              targetDate: createdMilestone.targetDate,
-              sortOrder: createdMilestone.sortOrder,
-              projectId: createdMilestone.projectId,
-            }),
+            text: JSON.stringify(mapMilestoneToOutput(createdMilestone)),
           },
         ],
       };

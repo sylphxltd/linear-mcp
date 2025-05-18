@@ -1,6 +1,6 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
-import { PaginationSchema, mapToMyIssueOutput } from '../issues/shared.js';
+import { PaginationSchema, mapToMyIssueOutput } from './shared.js';
 import { defineTool } from '../shared/tool-definition.js';
 
 export const listMyIssuesTool = defineTool({
@@ -19,7 +19,6 @@ export const listMyIssuesTool = defineTool({
         before,
         after,
       });
-      // Await state and team for each issue
       const myIssues = await Promise.all(issues.nodes.map(mapToMyIssueOutput));
       return {
         content: [

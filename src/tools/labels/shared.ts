@@ -1,53 +1,24 @@
-import type { Issue, IssueLabel, Team } from '@linear/sdk';
-import type { LinearClient } from '@linear/sdk';
-import { z } from 'zod';
+import type { IssueLabel } from '@linear/sdk';
+import { getAvailableTeamsMessage } from '../teams/shared.js';
 
-// --- Tool definition utility (local copy) ---
-
-// --- Label schemas (local copy) ---
-export const LabelListSchema = {
-  teamId: z.string().describe('The team UUID'),
-};
-
-/**
- * Fetches a message listing all available teams, or a fallback message if none found.
- */
-export async function getAvailableTeamsMessage(linearClient: LinearClient): Promise<string> {
-  try {
-    const allTeams = await linearClient.teams();
-    if (allTeams.nodes.length > 0) {
-      const teamList = allTeams.nodes.map((t: Team) => ({
-        id: t.id,
-        name: t.name,
-      }));
-      return ` Valid teams are: ${JSON.stringify(teamList, null, 2)}`;
-    }
-    return ' No teams available to list.';
-  } catch {
-    return ' (Could not fetch available teams for context.)';
-  }
+export interface LabelOutput {
+  id: string;
+  name: string;
+  color: string;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
-/**
- * Formats an array of label nodes for output.
- */
-export function formatLabelNodes(labels: IssueLabel[]): object[] {
-  return labels.map((label) => ({
+export function mapLabelToOutput(label: IssueLabel): LabelOutput {
+  return {
     id: label.id,
     name: label.name,
     color: label.color,
-    description: label.description,
-    createdAt:
-      label.createdAt instanceof Date
-        ? label.createdAt.toISOString()
-        : typeof label.createdAt === 'string'
-          ? label.createdAt
-          : undefined,
-    updatedAt:
-      label.updatedAt instanceof Date
-        ? label.updatedAt.toISOString()
-        : typeof label.updatedAt === 'string'
-          ? label.updatedAt
-          : undefined,
-  }));
+    description: label.description ?? null,
+    createdAt: label.createdAt instanceof Date ? label.createdAt.toISOString() : label.createdAt,
+    updatedAt: label.updatedAt instanceof Date ? label.updatedAt.toISOString() : label.updatedAt,
+  };
 }
+
+export { getAvailableTeamsMessage };

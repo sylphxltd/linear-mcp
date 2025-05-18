@@ -2,8 +2,9 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-// --- User schema (localized) ---
-export const UserQuerySchema = {
+import { mapUserToOutput, mapUserToSummary } from './shared.js';
+
+const UserQuerySchema = {
   query: z.string().describe('The UUID or name of the user to retrieve'),
 };
 
@@ -20,17 +21,7 @@ export const getUserTool = defineTool({
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                displayName: user.displayName,
-                avatarUrl: user.avatarUrl,
-                active: user.active,
-                admin: user.admin,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt,
-              }),
+              text: JSON.stringify(mapUserToOutput(user)),
             },
           ],
         };
@@ -50,17 +41,7 @@ export const getUserTool = defineTool({
           content: [
             {
               type: 'text',
-              text: JSON.stringify({
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                displayName: user.displayName,
-                avatarUrl: user.avatarUrl,
-                active: user.active,
-                admin: user.admin,
-                createdAt: user.createdAt,
-                updatedAt: user.updatedAt,
-              }),
+              text: JSON.stringify(mapUserToOutput(user)),
             },
           ],
         };
@@ -75,13 +56,7 @@ export const getUserTool = defineTool({
     // If user not found by ID, name, or email, fetch all users and include in error message
     try {
       const allUsers = await linearClient.users();
-      const validUsers = allUsers.nodes.map((u) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        displayName: u.displayName,
-        active: u.active,
-      }));
+      const validUsers = allUsers.nodes.map(mapUserToSummary);
       throw new McpError(
         ErrorCode.InvalidParams,
         `User with query "${query}" not found. Valid users are: ${JSON.stringify(validUsers, null, 2)}`,

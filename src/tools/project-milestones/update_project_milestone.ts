@@ -2,8 +2,9 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-// --- Project Milestone schema (localized) ---
-export const UpdateProjectMilestoneInputSchema = z.object({
+import { mapMilestoneToOutput } from './shared.js';
+
+const UpdateProjectMilestoneInputSchema = z.object({
   milestoneId: z.string().uuid('Invalid milestone ID'),
   name: z.string().min(1, 'Milestone name cannot be empty').optional(),
   description: z.string().optional(),
@@ -59,14 +60,7 @@ export const updateProjectMilestoneTool = defineTool({
         content: [
           {
             type: 'text',
-            text: JSON.stringify({
-              id: updatedMilestone.id,
-              name: updatedMilestone.name,
-              description: updatedMilestone.description,
-              targetDate: updatedMilestone.targetDate,
-              sortOrder: updatedMilestone.sortOrder,
-              projectId: updatedMilestone.projectId,
-            }),
+            text: JSON.stringify(mapMilestoneToOutput(updatedMilestone)),
           },
         ],
       };

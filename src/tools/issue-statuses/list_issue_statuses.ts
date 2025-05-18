@@ -1,7 +1,11 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { IssueStatusListSchema } from './shared.js';
-import { throwInternalError } from './shared.js';
+import { z } from 'zod';
+import { throwInternalError, mapIssueStatusToOutput } from './shared.js';
+
+const IssueStatusListSchema = {
+  teamId: z.string().describe('The UUID of the team to list issue statuses for'),
+};
 
 export const listIssueStatusesTool = defineTool({
   name: 'list_issue_statuses',
@@ -19,16 +23,7 @@ export const listIssueStatusesTool = defineTool({
         content: [
           {
             type: 'text',
-            text: JSON.stringify(
-              states.nodes.map((state) => ({
-                id: state.id,
-                name: state.name,
-                color: state.color,
-                type: state.type,
-                description: state.description,
-                position: state.position,
-              })),
-            ),
+            text: JSON.stringify(states.nodes.map(mapIssueStatusToOutput)),
           },
         ],
       };
