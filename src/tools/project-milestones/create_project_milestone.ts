@@ -1,9 +1,31 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { CreateProjectMilestoneInputSchema } from './shared.js';
-import { getAvailableProjectsJsonForError } from './shared.js';
+// --- Project Milestone schemas (localized) ---
+export const CreateProjectMilestoneInputSchema = z.object({
+  projectId: z.string().uuid('Invalid project ID'),
+  name: z.string().min(1, 'Milestone name cannot be empty'),
+  description: z.string().optional(),
+  targetDate: z.string().datetime({ message: 'Invalid ISO date string for targetDate' }).optional(),
+});
+// Helper function to get available projects for error messages
+import type { LinearClient } from '@linear/sdk';
+export async function getAvailableProjectsJsonForError(
+  linearClient: LinearClient,
+): Promise<string> {
+  try {
+    const projects = await linearClient.projects();
+    if (!projects.nodes || projects.nodes.length === 0) {
+      return '[]';
+    }
+    const projectList = projects.nodes.map((p) => ({ id: p.id, name: p.name }));
+    return JSON.stringify(projectList, null, 2);
+  } catch (e) {
+    const error = e as Error;
+    return `(Could not fetch available projects for context: ${error.message})`;
+  }
+}
 
 export const createProjectMilestoneTool = defineTool({
   name: 'create_project_milestone',

@@ -1,8 +1,14 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import type { z } from 'zod';
+import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { UpdateProjectMilestoneInputSchema } from './shared.js';
+// --- Project Milestone schema (localized) ---
+export const UpdateProjectMilestoneInputSchema = z.object({
+  milestoneId: z.string().uuid('Invalid milestone ID'),
+  name: z.string().min(1, 'Milestone name cannot be empty').optional(),
+  description: z.string().optional(),
+  targetDate: z.string().datetime({ message: 'Invalid ISO date string for targetDate' }).optional(),
+});
 
 export const updateProjectMilestoneTool = defineTool({
   name: 'update_project_milestone',

@@ -1,7 +1,11 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { TeamQuerySchema } from './shared.js';
+// --- Team schema (localized) ---
+export const TeamQuerySchema = {
+  query: z.string().describe('The UUID or name of the team to retrieve'),
+};
 
 export const getTeamTool = defineTool({
   name: 'get_team',
