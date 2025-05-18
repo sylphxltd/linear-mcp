@@ -1,4 +1,10 @@
-import type { Project } from '@linear/sdk';
+import type { Project, LinearClient } from '@linear/sdk';
+
+export interface ProjectSummary {
+  id: string;
+  name: string;
+  state: string;
+}
 
 export type ProjectOutput = {
   id: string;
@@ -30,3 +36,21 @@ export const mapProjectToOutput = (project: Project): ProjectOutput => ({
   updatedAt: project.updatedAt.toISOString(),
   url: project.url,
 });
+
+// Helper function to get available projects list
+export async function getAvailableProjectsMessage(linearClient: LinearClient): Promise<string> {
+  try {
+    const projects = await linearClient.projects();
+    if (!projects.nodes || projects.nodes.length === 0) {
+      return ' No projects available.';
+    }
+    const projectList = projects.nodes.map((p): ProjectSummary => ({
+      id: p.id,
+      name: p.name,
+      state: p.state,
+    }));
+    return ` Available projects are: ${JSON.stringify(projectList, null, 2)}`;
+  } catch (error) {
+    return ` (Could not fetch available projects: ${(error as Error).message})`;
+  }
+}

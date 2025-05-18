@@ -1,3 +1,4 @@
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { z } from 'zod';
@@ -16,12 +17,13 @@ export const createCommentTool = defineTool({
     const linearClient = getLinearClient();
     const issue = await linearClient.issue(issueId);
     if (!issue) {
-      throw new Error(`Issue with ID '${issueId}' not found.`);
+      throw new McpError(ErrorCode.InvalidParams, `Issue with ID '${issueId}' not found.`);
     }
     const commentPayload = await linearClient.createComment({ issueId, body });
     const newComment = await commentPayload.comment;
     if (!newComment)
-      throw new Error(
+      throw new McpError(
+        ErrorCode.InternalError,
         `Failed to create comment or retrieve details. Sync ID: ${commentPayload.lastSyncId}`,
       );
     return {

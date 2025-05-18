@@ -193,3 +193,16 @@ export async function mapIssueToGitBranch(issue: Issue): Promise<IssueGitBranchO
     branchName: await issue.branchName,
   };
 }
+
+// --- Helper for error messages ---
+export function getAvailableIssuesMessage(issues: Issue[]): string {
+  if (issues.length === 0) {
+    return 'No issues found.';
+  }
+  
+  const issuesList = issues.map(issue => {
+    return `- ${issue.id}: ${issue.identifier} - ${issue.title}`;
+  }).join('\n');
+  
+  return `Available issues:\n${issuesList}`;
+}

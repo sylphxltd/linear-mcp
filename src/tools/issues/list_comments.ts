@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { mapCommentToOutput } from './shared.js';
@@ -11,7 +12,7 @@ export const listCommentsTool = defineTool({
     const linearClient = getLinearClient();
     const issue = await linearClient.issue(issueId);
     if (!issue) {
-      throw new Error(`Issue with ID '${issueId}' not found.`);
+      throw new McpError(ErrorCode.InvalidParams, `Issue with ID '${issueId}' not found.`);
     }
     const comments = await issue.comments();
     const commentDetails = comments.nodes.map(mapCommentToOutput);

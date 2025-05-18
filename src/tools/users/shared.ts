@@ -35,3 +35,16 @@ export function mapUserToSummary(user: User) {
     active: user.active,
   };
 }
+
+export function getAvailableUsersMessage(users: User[]): string {
+  if (users.length === 0) {
+    return 'No users found.';
+  }
+  
+  const usersList = users.map(user => {
+    const displayInfo = user.displayName ? ` (${user.displayName})` : '';
+    return `- ${user.id}: ${user.name}${displayInfo}`;
+  }).join('\n');
+  
+  return `Available users:\n${usersList}`;
+}

@@ -1,8 +1,13 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
-import { z } from 'zod';
 import type { WorkflowState } from '@linear/sdk';
 
 // Types
+export interface IssueStatusSummary {
+  id: string;
+  name: string;
+  type: string;
+}
+
 export interface IssueStatusOutput {
   id: string;
   name: string;
@@ -24,8 +29,12 @@ export function mapIssueStatusToOutput(status: WorkflowState): IssueStatusOutput
   };
 }
 
-// Error Handlers
-export function throwInternalError(message: string, error: unknown): never {
-  const err = error as { message?: string };
-  throw new McpError(ErrorCode.InternalError, `${message}: ${err.message || 'Unknown error'}`);
+// Helper Functions
+export async function getAvailableStatusesMessage(states: WorkflowState[]): Promise<string> {
+  const validStatuses = states.map((s): IssueStatusSummary => ({
+    id: s.id,
+    name: s.name,
+    type: s.type,
+  }));
+  return ` Available statuses are: ${JSON.stringify(validStatuses, null, 2)}`;
 }

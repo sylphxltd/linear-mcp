@@ -2,44 +2,76 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { z } from 'zod';
-import { mapProjectToOutput } from './shared.js';
+import { mapProjectToOutput, getAvailableProjectsMessage } from './shared.js';
 
 const ProjectUpdateSchema = {
-  id: z.string().describe('The UUID of the project to update.'),
-  name: z.string().optional().describe('The new name of the project.'),
-  description: z.string().optional().describe('The new description of the project in Markdown.'),
-  content: z.string().optional().describe('The new content of the project in Markdown.'),
-  startDate: z.string().optional().describe('The new start date of the project in ISO format.'),
-  targetDate: z.string().optional().describe('The new target date of the project in ISO format.'),
-  teamIds: z.array(z.string()).optional().describe('Array of team UUIDs to associate the project with.'),
+  // Required
+  id: z.string().uuid().describe('Project UUID'),
+  
+  // Basic information
+  name: z.string().min(1).optional().describe('New project name'),
+  description: z.string().optional().describe('New description in markdown'),
+  content: z.string().optional().describe('New content in markdown'),
+  
+  // Dates
+  startDate: z.string().datetime().optional().describe('New start date (ISO format)'),
+  targetDate: z.string().datetime().optional().describe('New target date (ISO format)'),
+  
+  // Teams
+  teamIds: z.array(z.string().uuid()).optional().describe('Team UUIDs to associate with'),
 };
 
 export const updateProjectTool = defineTool({
   name: 'update_project',
   description: 'Update an existing Linear project',
   inputSchema: ProjectUpdateSchema,
-  handler: async ({ id, name, description, content, startDate, targetDate, teamIds }) => {
+  handler: async ({ id, ...updateFields }) => {
     const linearClient = getLinearClient();
-    const projectInput = {
-      name,
-      description,
-      content,
-      startDate,
-      targetDate,
-      ...(teamIds !== undefined ? { teamIds } : {}),
-    };
-    const projectPayload = await linearClient.updateProject(id, projectInput);
-    if (!projectPayload.project) {
-      throw new McpError(ErrorCode.InternalError, 'Failed to update project: No project returned');
+
+    try {
+      // Check if project exists
+      const existingProject = await linearClient.project(id);
+      if (!existingProject) {
+        const availableProjectsMessage = await getAvailableProjectsMessage(linearClient);
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `Project with ID "${id}" not found.${availableProjectsMessage}`,
+        );
+      }
+
+      // Validate that at least one field is being updated
+      if (Object.keys(updateFields).length === 0) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          'Must provide at least one field to update',
+        );
+      }
+
+      // Update the project
+      const projectPayload = await linearClient.updateProject(id, updateFields);
+      const updatedProject = await projectPayload.project;
+
+      if (!updatedProject) {
+        throw new McpError(
+          ErrorCode.InternalError,
+          `Failed to update project: No project returned. Sync ID: ${projectPayload.lastSyncId}`,
+        );
+      }
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(mapProjectToOutput(updatedProject)),
+          },
+        ],
+      };
+    } catch (error) {
+      if (error instanceof McpError) throw error;
+      throw new McpError(
+        ErrorCode.InternalError,
+        `Failed to update project: ${(error as Error).message || 'Unknown error'}`,
+      );
     }
-    const project = await projectPayload.project;
-    return {
-      content: [
-        {
-          type: 'text',
-          text: JSON.stringify(mapProjectToOutput(project)),
-        },
-      ],
-    };
   },
 });

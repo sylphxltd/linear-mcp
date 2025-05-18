@@ -5,68 +5,73 @@ import { defineTool } from '../shared/tool-definition.js';
 import { mapUserToOutput, mapUserToSummary } from './shared.js';
 
 const UserQuerySchema = {
-  query: z.string().describe('The UUID or name of the user to retrieve'),
+  id: z.string().uuid().optional().describe('User UUID'),
+  email: z.string().email().optional().describe('User email'),
+  name: z.string().optional().describe('User name or display name'),
 };
 
 export const getUserTool = defineTool({
   name: 'get_user',
   description: 'Retrieve details of a specific Linear user',
   inputSchema: UserQuerySchema,
-  handler: async ({ query }: { query: string }) => {
+  handler: async (input) => {
     const linearClient = getLinearClient();
+    let user;
+
     try {
-      const user = await linearClient.user(query);
-      if (user) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(mapUserToOutput(user)),
-            },
-          ],
-        };
+      if (!input.id && !input.email && !input.name) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          'Must provide either id, email, or name to find a user',
+        );
       }
-    } catch (_error: unknown) {
-      // continue to search by name/email
-    }
-    try {
-      const users = await linearClient.users({
-        filter: {
-          or: [{ name: { eq: query } }, { email: { eq: query } }, { displayName: { eq: query } }],
-        },
-      });
-      if (users.nodes.length > 0) {
-        const user = users.nodes[0];
-        return {
-          content: [
-            {
-              type: 'text',
-              text: JSON.stringify(mapUserToOutput(user)),
-            },
-          ],
-        };
+
+      // Try specific ID first
+      if (input.id) {
+        user = await linearClient.user(input.id);
+        if (user) {
+          return {
+            content: [{ type: 'text', text: JSON.stringify(mapUserToOutput(user)) }],
+          };
+        }
+        throw new McpError(ErrorCode.InvalidParams, `User with ID '${input.id}' not found`);
       }
-    } catch (error: unknown) {
-      const err = error as { message?: string };
+
+      // Search by email or name
+      const filter: Record<string, unknown> = {};
+      if (input.email) filter.email = { eq: input.email };
+      if (input.name) {
+        filter.or = [
+          { name: { eq: input.name } },
+          { displayName: { eq: input.name } },
+        ];
+      }
+
+      const users = await linearClient.users({ filter });
+      if (users.nodes.length === 0) {
+        const allUsers = await linearClient.users();
+        const validUsers = allUsers.nodes.map(mapUserToSummary);
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          `User not found. Available users: ${JSON.stringify(validUsers, null, 2)}`,
+        );
+      }
+
+      if (users.nodes.length > 1) {
+        throw new McpError(
+          ErrorCode.InvalidParams,
+          'Multiple users found. Please use a more specific search.',
+        );
+      }
+
+      return {
+        content: [{ type: 'text', text: JSON.stringify(mapUserToOutput(users.nodes[0])) }],
+      };
+    } catch (error) {
+      if (error instanceof McpError) throw error;
       throw new McpError(
         ErrorCode.InternalError,
-        `Failed to get user: ${err.message || 'Unknown error'}`,
-      );
-    }
-    // If user not found by ID, name, or email, fetch all users and include in error message
-    try {
-      const allUsers = await linearClient.users();
-      const validUsers = allUsers.nodes.map(mapUserToSummary);
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `User with query "${query}" not found. Valid users are: ${JSON.stringify(validUsers, null, 2)}`,
-      );
-    } catch (listError: unknown) {
-      const err = listError as { message?: string };
-      // If listing users also fails, throw a generic not found error
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `User with query "${query}" not found. Also failed to list available users: ${err.message || 'Unknown error'}`,
+        `Failed to get user: ${(error as Error).message || 'Unknown error'}`,
       );
     }
   },
