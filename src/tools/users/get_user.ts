@@ -1,7 +1,11 @@
 import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { UserQuerySchema } from './shared.js';
+// --- User schema (localized) ---
+export const UserQuerySchema = {
+  query: z.string().describe('The UUID or name of the user to retrieve'),
+};
 
 export const getUserTool = defineTool({
   name: 'get_user',
