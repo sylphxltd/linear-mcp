@@ -22,6 +22,17 @@ yarn add linear-mcp
 # or
 pnpm add linear-mcp
 ```
+## Code Style & Formatting
+
+This project enforces a consistent code style and formatting using [Biome](https://biomejs.dev/). All code and configuration files are automatically checked and formatted according to the shared [`@sylphlab/biome-config`](https://github.com/sylphxltd/biome-config) rules, as specified in [`biome.json`](./biome.json).
+
+**How to check and fix formatting:**
+```bash
+pnpm exec biome check .      # Check for formatting/lint issues
+pnpm exec biome check --apply-unsafe .   # Auto-fix all issues
+```
+
+All commits must pass Biome checks with zero errors. For details on the enforced style, see the shared config linked above.
 
 ## MCP Host Configuration
 
