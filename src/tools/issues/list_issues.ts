@@ -1,38 +1,7 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { IssueFilterSchema } from './shared.js';
-import {
-  type IssueFilters,
-  mapIssueToDetails,
-  validateAssignee,
-  validateProjectMilestone,
-  validateState,
-  validateTeam,
-} from './shared.js';
-async function validateListIssuesInput(
-  linearClient: ReturnType<typeof getLinearClient>,
-  {
-    teamId,
-    stateId,
-    assigneeId,
-    projectMilestoneId,
-  }: {
-    teamId?: string;
-    stateId?: string;
-    assigneeId?: string;
-    projectMilestoneId?: string;
-  },
-) {
-  if (teamId) await validateTeam(linearClient, teamId, 'listing issues');
-  if (stateId) {
-    if (!teamId)
-      throw new Error("Cannot validate stateId: 'teamId' is required when 'stateId' is provided.");
-    await validateState(linearClient, teamId, stateId, 'listing issues');
-  }
-  if (assigneeId) await validateAssignee(linearClient, assigneeId, 'listing issues');
-  if (projectMilestoneId)
-    await validateProjectMilestone(linearClient, projectMilestoneId, null, 'listing issues');
-}
+import { type IssueFilters, mapIssueToDetails } from './shared.js';
 function buildIssueFilters({
   query,
   teamId,
@@ -106,12 +75,6 @@ export const listIssuesTool = defineTool({
     limit = 50,
   }) => {
     const linearClient = getLinearClient();
-    await validateListIssuesInput(linearClient, {
-      teamId,
-      stateId,
-      assigneeId,
-      projectMilestoneId,
-    });
     const filters = buildIssueFilters({
       query,
       teamId,

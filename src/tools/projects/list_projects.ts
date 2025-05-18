@@ -2,7 +2,6 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { ProjectFilterSchema } from './shared.js';
-import { validateTeamIdOrThrow } from './shared.js';
 
 export const listProjectsTool = defineTool({
   name: 'list_projects',
@@ -11,10 +10,6 @@ export const listProjectsTool = defineTool({
   handler: async ({ limit, before, after, includeArchived, teamId }) => {
     try {
       const linearClient = getLinearClient();
-
-      if (teamId) {
-        await validateTeamIdOrThrow(linearClient, teamId);
-      }
 
       const filters: Record<string, unknown> = {
         first: limit,

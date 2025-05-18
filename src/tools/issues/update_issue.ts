@@ -3,15 +3,7 @@ import { ErrorCode, McpError } from '@modelcontextprotocol/sdk/types.js';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { IssueUpdateSchema } from './shared.js';
-import {
-  mapIssueToDetails,
-  validateAssignee,
-  validateIssueExists,
-  validateLabels,
-  validateProject,
-  validateProjectMilestone,
-  validateState,
-} from './shared.js';
+import { mapIssueToDetails } from './shared.js';
 
 export const updateIssueTool = defineTool({
   name: 'update_issue',
@@ -31,23 +23,11 @@ export const updateIssueTool = defineTool({
   }) => {
     const linearClient = getLinearClient();
 
-    // Validate the issue exists and get current values
-    const issueToUpdate = await validateIssueExists(linearClient, id, 'updating issue');
-    const currentTeamId = (await issueToUpdate.team)?.id;
-    const currentProjectId = (await issueToUpdate.project)?.id;
-
-    // Validate input parameters
-    await validateInputParameters({
-      linearClient,
-      id,
-      currentTeamId,
-      currentProjectId,
-      projectId,
-      stateId,
-      assigneeId,
-      labelIds,
-      projectMilestoneId,
-    });
+    // Get the issue to update
+    const issueToUpdate = await linearClient.issue(id);
+    if (!issueToUpdate) {
+      throw new McpError(ErrorCode.InvalidParams, `Issue with ID '${id}' not found.`);
+    }
 
     // Construct update payload with only defined fields
     const updatePayload = buildUpdatePayload({
@@ -87,21 +67,6 @@ export const updateIssueTool = defineTool({
 });
 
 /**
- * Input parameters for validation
- */
-interface ValidationParams {
-  linearClient: LinearClient;
-  id: string;
-  currentTeamId?: string;
-  currentProjectId?: string;
-  projectId?: string;
-  stateId?: string;
-  assigneeId?: string;
-  labelIds?: string[];
-  projectMilestoneId?: string | null;
-}
-
-/**
  * Input parameters for building update payload
  */
 interface UpdatePayloadParams {
@@ -114,67 +79,6 @@ interface UpdatePayloadParams {
   labelIds?: string[];
   dueDate?: string;
   projectMilestoneId?: string | null;
-}
-
-/**
- * Validates all input parameters for updating an issue
- */
-async function validateInputParameters({
-  linearClient,
-  id,
-  currentTeamId,
-  currentProjectId,
-  projectId,
-  stateId,
-  assigneeId,
-  labelIds,
-  projectMilestoneId,
-}: ValidationParams): Promise<void> {
-  // Validate project if provided
-  if (projectId) {
-    await validateProject(linearClient, projectId, 'updating issue');
-  }
-
-  // Validate state if provided
-  if (stateId) {
-    if (!currentTeamId) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Issue '${id}' has no team, cannot validate stateId.`,
-      );
-    }
-    await validateState(linearClient, currentTeamId, stateId, 'updating issue');
-  }
-
-  // Validate assignee if provided
-  if (assigneeId) {
-    await validateAssignee(linearClient, assigneeId, 'updating issue');
-  }
-
-  // Validate labels if provided
-  if (labelIds && labelIds.length > 0) {
-    if (!currentTeamId) {
-      throw new McpError(
-        ErrorCode.InvalidParams,
-        `Issue '${id}' has no team, cannot validate labelIds.`,
-      );
-    }
-    await validateLabels(linearClient, currentTeamId, labelIds, 'updating issue');
-  }
-
-  // Validate project milestone if provided or explicitly set to null
-  if (projectMilestoneId !== undefined) {
-    if (projectMilestoneId) {
-      const targetProjectId = projectId ?? currentProjectId;
-      await validateProjectMilestone(
-        linearClient,
-        projectMilestoneId,
-        targetProjectId,
-        'updating issue',
-      );
-    }
-    // If projectMilestoneId is null, it's valid (removing the milestone)
-  }
 }
 
 /**

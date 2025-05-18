@@ -1,7 +1,6 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { CommentCreateSchema } from './shared.js';
-import { validateIssueExists } from './shared.js';
 
 export const createCommentTool = defineTool({
   name: 'create_comment',
@@ -9,7 +8,10 @@ export const createCommentTool = defineTool({
   inputSchema: CommentCreateSchema,
   handler: async ({ issueId, body }) => {
     const linearClient = getLinearClient();
-    await validateIssueExists(linearClient, issueId, 'creating comment');
+    const issue = await linearClient.issue(issueId);
+    if (!issue) {
+      throw new Error(`Issue with ID '${issueId}' not found.`);
+    }
     const commentPayload = await linearClient.createComment({ issueId, body });
     const newComment = await commentPayload.comment;
     if (!newComment)

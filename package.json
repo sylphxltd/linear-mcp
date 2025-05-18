@@ -17,10 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/sylphxltd/linear-mcp.git"
   },
-  "files": [
-    "dist",
-    "README.md"
-  ],
+  "files": ["dist", "README.md"],
   "scripts": {
     "format": "biome format --write .",
     "check": "biome check --write --unsafe .",

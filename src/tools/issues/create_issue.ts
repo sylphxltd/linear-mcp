@@ -1,15 +1,7 @@
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { IssueCreateSchema } from './shared.js';
-import {
-  mapIssueToDetails,
-  validateAssignee,
-  validateLabels,
-  validateProject,
-  validateProjectMilestone,
-  validateState,
-  validateTeam,
-} from './shared.js';
+import { mapIssueToDetails } from './shared.js';
 
 export const createIssueTool = defineTool({
   name: 'create_issue',
@@ -28,15 +20,6 @@ export const createIssueTool = defineTool({
     projectMilestoneId,
   }) => {
     const linearClient = getLinearClient();
-    await validateTeam(linearClient, teamId, 'creating issue');
-    if (projectId) await validateProject(linearClient, projectId, 'creating issue');
-    if (stateId) await validateState(linearClient, teamId, stateId, 'creating issue');
-    if (assigneeId) await validateAssignee(linearClient, assigneeId, 'creating issue');
-    if (labelIds && labelIds.length > 0)
-      await validateLabels(linearClient, teamId, labelIds, 'creating issue');
-    if (projectMilestoneId)
-      await validateProjectMilestone(linearClient, projectMilestoneId, projectId, 'creating issue');
-
     const payload = {
       title,
       description,

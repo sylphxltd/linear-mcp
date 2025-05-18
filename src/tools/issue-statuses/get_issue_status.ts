@@ -1,6 +1,7 @@
+import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { IssueStatusQuerySchema } from './shared.js';
-import { throwInternalError, validateTeamOrThrow } from './shared.js';
+import { throwInternalError } from './shared.js';
 
 export const getIssueStatusTool = defineTool({
   name: 'get_issue_status',
@@ -8,7 +9,11 @@ export const getIssueStatusTool = defineTool({
   inputSchema: IssueStatusQuerySchema,
   handler: async ({ query, teamId }) => {
     try {
-      const team = await validateTeamOrThrow(teamId);
+      const linearClient = getLinearClient();
+      const team = await linearClient.team(teamId);
+      if (!team) {
+        throw new Error(`Team with ID '${teamId}' not found.`);
+      }
       const states = await team.states();
       let state = states.nodes.find((s) => s.id === query);
       if (!state) {

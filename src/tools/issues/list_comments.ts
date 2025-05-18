@@ -2,7 +2,6 @@ import type { Comment as LinearComment } from '@linear/sdk';
 import { z } from 'zod';
 import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
-import { validateIssueExists } from './shared.js';
 
 export const listCommentsTool = defineTool({
   name: 'list_comments',
@@ -10,7 +9,10 @@ export const listCommentsTool = defineTool({
   inputSchema: { issueId: z.string().describe('The ID of the issue to fetch comments for') },
   handler: async ({ issueId }) => {
     const linearClient = getLinearClient();
-    const issue = await validateIssueExists(linearClient, issueId, 'listing comments');
+    const issue = await linearClient.issue(issueId);
+    if (!issue) {
+      throw new Error(`Issue with ID '${issueId}' not found.`);
+    }
     const comments = await issue.comments();
     const commentDetails = comments.nodes.map((comment: LinearComment) => ({
       id: comment.id,

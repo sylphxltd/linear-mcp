@@ -3,7 +3,6 @@ import { getLinearClient } from '../../utils/linear-client.js';
 import { defineTool } from '../shared/tool-definition.js';
 import { ProjectUpdateSchema } from './shared.js';
 import type { ProjectUpdateInput } from './shared.js';
-import { validateProjectUpdateArgsOrThrow } from './shared.js';
 
 export const updateProjectTool = defineTool({
   name: 'update_project',
@@ -12,8 +11,6 @@ export const updateProjectTool = defineTool({
   handler: async ({ id, name, description, content, startDate, targetDate, teamIds }) => {
     try {
       const linearClient = getLinearClient();
-
-      await validateProjectUpdateArgsOrThrow(linearClient, id, teamIds);
 
       const projectInput: ProjectUpdateInput & { teamIds?: string[] } = {
         name,
