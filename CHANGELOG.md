@@ -1,5 +1,11 @@
 # @sylphx/linear-mcp
 
+## 1.4.0
+
+### Minor Changes
+
+- a57325a: removed validation before execution
+
 ## 1.3.4
 
 ### Patch Changes
