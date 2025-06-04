@@ -17,13 +17,14 @@ const IssueUpdateSchema = {
   labelIds: z.array(z.string()).optional().describe('Label IDs'),
   stateId: z.string().optional().describe('Workflow state ID'),
   projectId: z.string().optional().describe('Project ID to assign the issue to'),
+  projectMilestoneId: z.string().optional().describe('Project milestone ID to assign the issue to'),
 };
 
 export const updateIssueTool = defineTool({
   name: 'update_issue',
   description: 'Update an existing Linear issue',
   inputSchema: IssueUpdateSchema,
-  handler: async ({ id, title, description, priority, assigneeId, labelIds, stateId, projectId }) => {
+  handler: async ({ id, title, description, priority, assigneeId, labelIds, stateId, projectId, projectMilestoneId }) => {
     const linearClient = getLinearClient();
 
     // Get the issue to update
@@ -41,6 +42,7 @@ export const updateIssueTool = defineTool({
       ...(labelIds !== undefined && { labelIds }),
       ...(stateId !== undefined && { stateId }),
       ...(projectId !== undefined && { projectId }),
+      ...(projectMilestoneId !== undefined && { projectMilestoneId }),
     };
 
     // Update the issue
