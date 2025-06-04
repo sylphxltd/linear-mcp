@@ -16,7 +16,7 @@ import { LinearClientManager } from './utils/linear-client.js';
 import { issueStatusTools } from './tools/issue-statuses/index.js';
 import { issueTools } from './tools/issues/index.js';
 import { labelTools } from './tools/labels/index.js';
-import { myIssuesTools } from './tools/my-issues.js';
+// import { myIssuesTools } from './tools/my-issues.js'; // Duplicate - list_my_issues is already in issueTools
 import { projectMilestoneTools } from './tools/project-milestones/index.js';
 import { projectTools } from './tools/projects/index.js';
 import { teamTools } from './tools/teams/index.js';
@@ -53,7 +53,7 @@ const allTools = [
   ...userTools,
   ...issueStatusTools,
   ...labelTools,
-  ...myIssuesTools,
+  // ...myIssuesTools, // Removed duplicate - list_my_issues is already in issueTools
   ...projectMilestoneTools,
 ];
 

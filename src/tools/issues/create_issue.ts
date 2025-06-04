@@ -13,6 +13,8 @@ const IssueCreateSchema = {
   assigneeId: z.string().optional().describe('Assignee user ID'),
   labelIds: z.array(z.string()).optional().describe('Label IDs'),
   stateId: z.string().optional().describe('Workflow state ID'),
+  projectId: z.string().optional().describe('Project ID to assign the issue to'),
+  projectMilestoneId: z.string().optional().describe('Project milestone ID to assign the issue to'),
 };
 import { mapIssueToDetails } from './shared.js';
 

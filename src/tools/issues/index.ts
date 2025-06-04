@@ -6,6 +6,12 @@ import { listIssuesTool } from './list_issues.js';
 import { listMyIssuesTool } from './list_my_issues.js';
 import { updateIssueTool } from './update_issue.js';
 
+// Sub-issue management tools
+import { listSubIssuesTool } from './list_sub_issues.js';
+import { createSubIssueTool } from './create_sub_issue.js';
+import { setIssueParentTool } from './set_issue_parent.js';
+import { removeIssueParentTool } from './remove_issue_parent.js';
+
 export const issueTools = [
   listIssuesTool,
   listMyIssuesTool,
@@ -14,4 +20,10 @@ export const issueTools = [
   getIssueGitBranchNameTool,
   listCommentsTool,
   updateIssueTool,
+  
+  // Sub-issue management tools
+  listSubIssuesTool,
+  createSubIssueTool,
+  setIssueParentTool,
+  removeIssueParentTool,
 ];

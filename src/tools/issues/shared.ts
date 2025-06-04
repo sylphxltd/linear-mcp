@@ -59,6 +59,12 @@ export interface IssueGitBranchOutput {
   branchName: string;
 }
 
+export interface SubIssueSummary {
+  total: number;
+  completed: number;
+  percentCompleted: number;
+}
+
 export interface SimplifiedIssueDetails {
   id: string;
   identifier: string;
@@ -81,6 +87,10 @@ export interface SimplifiedIssueDetails {
     createdAt: Date;
     updatedAt: Date;
   }[];
+  // Sub-issue relationship fields
+  parent?: { id: string; identifier: string; title: string } | null;
+  subIssues?: { id: string; identifier: string; title: string }[];
+  subIssuesSummary?: SubIssueSummary | null;
   createdAt: Date;
   updatedAt: Date;
   url: string;
@@ -106,8 +116,9 @@ export type IssueFilters = {
 export async function mapIssueToDetails(
   issue: Issue,
   includeAttachments = false,
+  includeSubIssues = false,
 ): Promise<SimplifiedIssueDetails> {
-  const [state, assignee, team, project, projectMilestone, labelsResult, attachmentsResult] =
+  const [state, assignee, team, project, projectMilestone, labelsResult, attachmentsResult, parent, subIssuesResult] =
     await Promise.all([
       issue.state,
       issue.assignee,
@@ -116,6 +127,8 @@ export async function mapIssueToDetails(
       issue.projectMilestone,
       issue.labels(),
       includeAttachments ? issue.attachments() : Promise.resolve(null),
+      issue.parent,
+      includeSubIssues ? issue.children() : Promise.resolve(null),
     ]);
 
   return {
@@ -131,7 +144,7 @@ export async function mapIssueToDetails(
     projectMilestone: projectMilestone
       ? { id: projectMilestone.id, name: projectMilestone.name }
       : null,
-    labels: labelsResult.nodes.map((l) => ({ id: l.id, name: l.name, color: l.color })),
+    labels: labelsResult.nodes.map((l: any) => ({ id: l.id, name: l.name, color: l.color })),
     attachments:
       includeAttachments && attachmentsResult
         ? attachmentsResult.nodes.map((att: Attachment) => ({
@@ -145,6 +158,20 @@ export async function mapIssueToDetails(
             updatedAt: att.updatedAt,
           }))
         : undefined,
+    // Sub-issue relationship data
+    parent: parent ? { id: parent.id, identifier: parent.identifier, title: parent.title } : null,
+    subIssues: includeSubIssues && subIssuesResult 
+      ? subIssuesResult.nodes.map((subIssue: any) => ({
+          id: subIssue.id,
+          identifier: subIssue.identifier,
+          title: subIssue.title,
+        }))
+      : undefined,
+    subIssuesSummary: includeSubIssues && subIssuesResult ? {
+      total: subIssuesResult.nodes.length,
+      completed: 0, // We'll calculate this later when we have state info
+      percentCompleted: 0,
+    } : undefined,
     createdAt: issue.createdAt,
     updatedAt: issue.updatedAt,
     url: issue.url,
